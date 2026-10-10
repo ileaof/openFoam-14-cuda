@@ -1,0 +1,170 @@
+diff --git a/src/amgx4Foam/Make/files b/src/amgx4Foam/Make/files
+index 8f96170..961c529 100755
+--- a/src/amgx4Foam/Make/files
++++ b/src/amgx4Foam/Make/files
+@@ -1,10 +1,6 @@
+-/*solvers/petscSolver.C*/
+ solvers/amgxSolver.C
+-/*utils/petscUtils.C*/
+-/*utils/petscControls.C*/
+ utils/linearSolverContextTable.C
+-/*utils/petscLinearSolverContext.C*/
+ utils/amgxLinearSolverContext.C
+ utils/cacheManager.C
+ 
+-LIB = $(FOAM_MODULE_LIBBIN)/libpetscFoam
++LIB = $(FOAM_MODULE_LIBBIN)/libamgxFoam
+diff --git a/src/amgx4Foam/Make/options b/src/amgx4Foam/Make/options
+index 7044760..0a3a112 100755
+--- a/src/amgx4Foam/Make/options
++++ b/src/amgx4Foam/Make/options
+@@ -3,7 +3,7 @@ sinclude $(RULES)/mplib$(WM_MPLIB)
+ 
+ sinclude $(GENERAL_RULES)/module-path-user
+ 
+-/* Failsafe - default to user location */
++# Failsafe - default to user location
+ ifeq (,$(strip $(FOAM_MODULE_LIBBIN)))
+     FOAM_MODULE_LIBBIN = $(FOAM_USER_LIBBIN)
+ endif
+@@ -16,11 +16,11 @@ EXE_INC = \
+     -I$(LIB_SRC)/Pstream/mpi \
+     -I$(AMGX_INC) \
+     -I$(FOAM2CSR_INC) \
+-    -I/usr/local/cuda-11.6/include
++    -I${PETSC_INC} \
++    -I/usr/local/cuda/include
+ 
+ LIB_LIBS = \
+     -lfiniteVolume \
+     -lmeshTools \
+     -L$(AMGX_LIB) -lamgx \
+-    -L$(FOAM2CSR_LIB) -lfoam_csr
+-
++    -L$(FOAM2CSR_LIB) -lfoam2csr
+diff --git a/src/amgx4Foam/solvers/amgxSolver.C b/src/amgx4Foam/solvers/amgxSolver.C
+index 3346270..60d314e 100755
+--- a/src/amgx4Foam/solvers/amgxSolver.C
++++ b/src/amgx4Foam/solvers/amgxSolver.C
+@@ -31,7 +31,6 @@ License
+ #include "globalIndex.H"
+ //#include "PrecisionAdaptor.H"
+ #include "cyclicLduInterface.H"
+-#include "cyclicAMILduInterface.H"
+ #include "addToRunTimeSelectionTable.H"
+ #include "PstreamGlobals.H"
+ 
+@@ -95,7 +94,7 @@ Foam::solverPerformance Foam::amgxSolver::solve
+     const direction cmpt
+ ) const
+ {
+-    const fvMesh& fvm = dynamicCast<const fvMesh>(matrix_.mesh().thisDb());
++    const fvMesh& fvm = dynamicCast<const fvMesh>(matrix_.mesh().db());
+ 
+     // Ensure PETSc is initialized
+     //const petscControls& pcontrols = petscControls::New
+@@ -111,7 +110,7 @@ Foam::solverPerformance Foam::amgxSolver::solve
+ 
+     dictionary amgxDictCaching = amgxDict_.subOrEmptyDict("caching");
+    
+-    //const fvMesh& fvm = dynamicCast<const fvMesh>(matrix_.mesh().thisDb());
++    //const fvMesh& fvm = dynamicCast<const fvMesh>(matrix_.mesh().db());
+ 
+     const linearSolverContextTable<amgxLinearSolverContext>& contexts =
+         linearSolverContextTable<amgxLinearSolverContext>::New(fvm);
+@@ -216,7 +215,7 @@ Foam::solverPerformance Foam::amgxSolver::solve
+     //AMGX_vector_handle psi;
+     //AMGX_vector_handle source;
+ 
+-    amgx.solve(nRowsLocal, &psi[0], &source[0], Amat);
++    amgx.solve(nRowsLocal, &psi[0], const_cast<double*>(&source[0]), Amat);
+ 
+ 
+     double irnorm = 0.;
+diff --git a/src/amgx4Foam/utils/amgxLinearSolverContext.H b/src/amgx4Foam/utils/amgxLinearSolverContext.H
+index e4f0334..b08274b 100755
+--- a/src/amgx4Foam/utils/amgxLinearSolverContext.H
++++ b/src/amgx4Foam/utils/amgxLinearSolverContext.H
+@@ -40,6 +40,8 @@ SourceFiles
+ #include "linearSolverContext.H"
+ #include "AmgXSolver.H"
+ #include "AmgXCSRMatrix.H"
++#include "OSspecific.H"
++#include <petscsys.h>
+ #include "uncollatedFileOperation.H"
+ 
+ 
+@@ -84,6 +86,13 @@ public:
+         {
+             int err = 0;
+ 
++            PetscBool petscInitialized;
++            PetscInitialized(&petscInitialized);
++            if (!petscInitialized)
++            {
++                PetscInitializeNoArguments();
++            }
++
+             if (isFile(optionsFile))
+             {
+                 // AMGx initialize
+diff --git a/src/amgx4Foam/utils/linearSolverContextTable.H b/src/amgx4Foam/utils/linearSolverContextTable.H
+index a53d52c..51993e8 100755
+--- a/src/amgx4Foam/utils/linearSolverContextTable.H
++++ b/src/amgx4Foam/utils/linearSolverContextTable.H
+@@ -38,7 +38,7 @@ SourceFiles
+ #define foamLinearSolverContextTable_H
+ 
+ #include "fvMesh.H"
+-#include "MeshObject.H"
++#include "DemandDrivenMeshObject.H"
+ #include "HashPtrTable.H"
+ // #include "petscLinearSolverContext.H"
+ 
+@@ -54,10 +54,10 @@ namespace Foam
+ template <class T>
+ class linearSolverContextTable
+ :
+-    public MeshObject
++    public DemandDrivenMeshObject
+     <
+         fvMesh,
+-        TopologicalMeshObject,
++        DeletableMeshObject,
+         linearSolverContextTable<T>
+     >
+ {
+@@ -78,10 +78,10 @@ public:
+         //- Construct from mesh for given field
+         explicit linearSolverContextTable(const fvMesh& mesh)
+         :
+-            MeshObject
++            DemandDrivenMeshObject
+             <
+                 fvMesh,
+-                Foam::TopologicalMeshObject,
++                Foam::DeletableMeshObject,
+                 linearSolverContextTable<T>
+             >(mesh),
+             contexts_()
+@@ -114,11 +114,11 @@ public:
+             auto iter = contexts().find(name);
+ 
+             const bool cached = (iter!=HashTableCore::end());   //NOTE!!!!
+-            
++
+ 
+             if (iter==HashTableCore::end())
+             {
+-                contexts().set(name, new T{name, this->mesh().thisDb().time().system()/T::packageName + name + "Options"});
++                contexts().set(name, new T{name, this->mesh().db().time().system()/T::packageName + name + "Options"});
+                 iter = contexts().find(name);
+             }
+ 
+@@ -148,6 +148,3 @@ public:
+ #endif
+ 
+ // ************************************************************************* //
+-
+-
+-

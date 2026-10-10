@@ -1,0 +1,40 @@
+diff --git a/Make/nvcc b/Make/nvcc
+index fcffd7e..1b0efc6 100644
+--- a/Make/nvcc
++++ b/Make/nvcc
+@@ -2,9 +2,9 @@ SUFFIXES += .cu
+ SUFFIXES += .cpp
+ SUFFIXES += .C
+ 
+-NVARCH = 70
++NVARCH = 89
+ 
+-NVCC        = nvcc -std=c++14 --compiler-options='-fPIC' -arch=sm_$(NVARCH)
++NVCC        = nvcc -std=c++17 --compiler-options='-fPIC' -arch=sm_$(NVARCH)
+ 
+ cuFLAGS     = -O3
+ 
+diff --git a/Make/options b/Make/options
+index e6c8792..853a944 100644
+--- a/Make/options
++++ b/Make/options
+@@ -4,12 +4,13 @@ include $(OBJECTS_DIR)/../nvcc
+ 
+ sinclude $(GENERAL_RULES)/module-path-user
+ 
+-/* Failsafe - default to user location */
++# Failsafe - default to user location
+ ifeq (,$(strip $(FOAM_MODULE_LIBBIN)))
+     FOAM_MODULE_LIBBIN = $(FOAM_USER_LIBBIN)
+ endif
+ 
+ EXE_INC = \
++    $(PFLAGS) $(PINC) \
+     -I. \
+     -I$(CUBROOT) \
+     -I${PETSC_INC} \
+@@ -21,4 +22,3 @@ LIB_LIBS = \
+     -lmeshTools \
+     $(foreach dir,$(PETSC_LIB_DIR),-L$(dir)) -lpetsc \
+     -L$(AMGX_LIB) -lamgxsh
+-
