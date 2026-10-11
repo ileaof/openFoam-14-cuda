@@ -14,8 +14,8 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// O critério de parada da GPU está nos JSON: amgxpOptions (relativo 0.05)
-// e amgxpFinalOptions (relativo 0.001). tolerance/relTol abaixo são ignorados.
+// The GPU stopping criterion is in the JSON files: amgxpOptions (relative 0.05)
+// and amgxpFinalOptions (relative 0.001). tolerance/relTol below are ignored.
 solvers
 {
     p

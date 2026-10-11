@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 </head><body>
-<title>GPU no OpenFOAM-14</title>
+<title>GPU in OpenFOAM-14</title>
 <style>
-  /* Layout: tutorial em passos numerados, terminal preto como elemento central, TOC fixa lateral no desktop */
+  /* Layout: numbered tutorial steps, black terminal blocks as the main element, sticky side TOC on desktop */
   :root{
     --bg:#f6f7f9; --card:#ffffff; --ink:#1d2430; --muted:#5b6472;
     --gpu:#0b62d6; --gpu-soft:#e8f1fd; --cpu:#c2540c; --cpu-soft:#fdeee2;
@@ -126,22 +126,23 @@
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 
+
 <div class="layout">
 
 <aside class="toc">
   <div class="inner">
-    <h2>Neste tutorial</h2>
+    <h2>In this tutorial</h2>
     <ol>
-      <li><a href="#s1">Pré-requisitos</a></li>
+      <li><a href="#s1">Prerequisites</a></li>
       <li><a href="#s2">CUDA Toolkit</a></li>
-      <li><a href="#s3">Compilar o OpenFOAM-14</a></li>
-      <li><a href="#s4">Compilar a AMGX</a></li>
-      <li><a href="#s5">Compilar o foam2csr</a></li>
-      <li><a href="#s6">Portar e compilar o amgx4Foam</a></li>
-      <li><a href="#s7">Configurar um caso na GPU</a></li>
-      <li><a href="#s8">Caso completo: prove a capacidade numérica</a></li>
-      <li><a href="#s9">Antes de desistir da GPU</a></li>
-      <li><a href="#s10">Solução de problemas</a></li>
+      <li><a href="#s3">Build OpenFOAM-14</a></li>
+      <li><a href="#s4">Build AMGX</a></li>
+      <li><a href="#s5">Build foam2csr</a></li>
+      <li><a href="#s6">Port and build amgx4Foam</a></li>
+      <li><a href="#s7">Set up a case on the GPU</a></li>
+      <li><a href="#s8">Full case: prove the numerics</a></li>
+      <li><a href="#s9">Before giving up on the GPU</a></li>
+      <li><a href="#s10">Troubleshooting</a></li>
     </ol>
   </div>
 </aside>
@@ -150,31 +151,31 @@
 
 <header class="hero">
   <span class="eyebrow">Tutorial · OpenFOAM Foundation v14</span>
-  <h1>Solver de pressão do OpenFOAM na GPU com CUDA</h1>
-  <p>Passo a passo testado de ponta a ponta: compilar o OpenFOAM-14 do zero, acoplar o AMGX da NVIDIA como solver de pressão via <code class="inline">fvSolution</code>, e rodar um caso de verdade na GPU — sem alterar uma linha do código-fonte do Foundation.</p>
+  <h1>OpenFOAM's pressure solver on the GPU with CUDA</h1>
+  <p>A walkthrough tested end to end: build OpenFOAM-14 from scratch, couple NVIDIA's AMGX as the pressure solver through <code class="inline">fvSolution</code>, and run a real case on the GPU, without changing a single line of the Foundation source code.</p>
   <div class="reqs">
-    <span>GPU NVIDIA, compute capability ≥ 7.0</span>
+    <span>NVIDIA GPU, compute capability ≥ 7.0</span>
     <span>WSL2 · Ubuntu 22.04</span>
-    <span>~25 GB de disco livre</span>
+    <span>~25 GB of free disk</span>
   </div>
   <div class="hero-shot">
-    <img src="motorbike_streamlines.png" alt="Moto e piloto coloridos pela pressão, com tubos de corrente coloridos pela velocidade" loading="lazy">
-    <div class="cap">motorBike · 3,2 M células · o caso dos benchmarks de GPU</div>
+    <img src="motorbike_streamlines.png" alt="Motorbike and rider colored by pressure, with streamtubes colored by velocity" loading="lazy">
+    <div class="cap">motorBike · 3.2 M cells · the GPU benchmark case</div>
   </div>
 </header>
 
 <section id="s1">
-  <div class="step-head"><span class="step-num">01</span><h2>Pré-requisitos</h2></div>
-  <p class="step-sub">Confirme a GPU e a distro antes de começar — economiza retrabalho depois.</p>
+  <div class="step-head"><span class="step-num">01</span><h2>Prerequisites</h2></div>
+  <p class="step-sub">Check the GPU and the distro before starting; it saves rework later.</p>
   <pre><code><span class="prompt">$ </span>nvidia-smi --query-gpu=name,compute_cap,driver_version --format=csv
 <span class="c"># name, compute_cap, driver_version
 # NVIDIA GeForce RTX 4050 Laptop GPU, 8.9, 596.08</span></code></pre>
-  <div class="box warn"><b>Importante:</b> anote o <code class="inline">compute_cap</code> (ex: <code class="inline">8.9</code>) — vira <code class="inline">sm_89</code> mais adiante. Usar a arquitetura errada é o erro mais comum deste tutorial (§9).</div>
+  <div class="box warn"><b>Important:</b> write down the <code class="inline">compute_cap</code> (e.g. <code class="inline">8.9</code>); it becomes <code class="inline">sm_89</code> later. Using the wrong architecture is the most common mistake in this tutorial (§10).</div>
 </section>
 
 <section id="s2">
-  <div class="step-head"><span class="step-num">02</span><h2>CUDA Toolkit (repositório WSL-Ubuntu)</h2></div>
-  <p class="step-sub">Use o repositório <code class="inline">wsl-ubuntu</code> específico — o pacote genérico do Ubuntu tenta instalar o driver Linux, que conflita com o driver do Windows que já faz a ponte pro WSL.</p>
+  <div class="step-head"><span class="step-num">02</span><h2>CUDA Toolkit (WSL-Ubuntu repository)</h2></div>
+  <p class="step-sub">Use the specific <code class="inline">wsl-ubuntu</code> repository: Ubuntu's generic package tries to install the Linux driver, which conflicts with the Windows driver that already bridges the GPU into WSL.</p>
   <pre><code><span class="prompt">$ </span>wget https://developer.download.nvidia.com/compute/cuda/repos/wsl-ubuntu/x86_64/cuda-keyring_1.1-1_all.deb
 <span class="prompt">$ </span>sudo dpkg -i cuda-keyring_1.1-1_all.deb
 <span class="prompt">$ </span>sudo apt-get update
@@ -182,54 +183,54 @@
   <pre><code><span class="prompt">$ </span>export PATH=/usr/local/cuda/bin:$PATH
 <span class="prompt">$ </span>nvcc --version
 <span class="c"># Cuda compilation tools, release 13.2, V13.2.86</span></code></pre>
-  <div class="box warn"><b>Cuidado:</b> se o seu WSL já tiver o pacote genérico <code class="inline">nvidia-cuda-toolkit</code> do Ubuntu instalado (ele vem com um <code class="inline">nvcc</code> antigo, versão 11.5, em <code class="inline">/usr/bin/nvcc</code>), ele entra na frente do PATH. Verifique com <code class="inline">which nvcc</code> — se apontar para <code class="inline">/usr/bin/nvcc</code>, exporte o PATH acima <i>antes</i> de qualquer build.</div>
+  <div class="box warn"><b>Careful:</b> if your WSL already has Ubuntu's generic <code class="inline">nvidia-cuda-toolkit</code> package (it ships an old <code class="inline">nvcc</code>, version 11.5, in <code class="inline">/usr/bin/nvcc</code>), it comes first in the PATH. Check with <code class="inline">which nvcc</code>: if it points to <code class="inline">/usr/bin/nvcc</code>, export the PATH above <i>before</i> any build.</div>
 </section>
 
 <section id="s3">
-  <div class="step-head"><span class="step-num">03</span><h2>Compilar o OpenFOAM-14</h2></div>
-  <p class="step-sub">A pasta local <b>precisa</b> se chamar exatamente <code class="inline">OpenFOAM-&lt;versão&gt;</code> — o <code class="inline">etc/bashrc</code> deriva o caminho disso, não do nome do diretório onde você clonou.</p>
+  <div class="step-head"><span class="step-num">03</span><h2>Build OpenFOAM-14</h2></div>
+  <p class="step-sub">The local folder <b>must</b> be called exactly <code class="inline">OpenFOAM-&lt;version&gt;</code>: <code class="inline">etc/bashrc</code> derives its paths from that name.</p>
   <pre><code><span class="prompt">$ </span>mkdir -p ~/dev &amp;&amp; cd ~/dev
-<span class="prompt">$ </span>git clone https://github.com/OpenFOAM/OpenFOAM-14.git
+<span class="prompt">$ </span>git clone https://github.com/ileaof/openFoam-14-cuda.git OpenFOAM-14
 <span class="prompt">$ </span>sudo apt-get install -y build-essential flex bison cmake git \
     zlib1g-dev libboost-system-dev libboost-thread-dev \
     libopenmpi-dev openmpi-bin libreadline-dev libncurses-dev \
     libxt-dev rpm libscotch-dev libptscotch-dev</code></pre>
   <pre><code><span class="prompt">$ </span>cd ~/dev/OpenFOAM-14
 <span class="prompt">$ </span>source etc/bashrc
-<span class="prompt">$ </span>./Allwmake -j $(( $(nproc) / 2 ))  <span class="c"># limite a RAM, nao use todos os nucleos de uma vez</span></code></pre>
-  <div class="box ok"><b>Confirma que deu certo:</b> depois do build, <code class="inline">ls $FOAM_APPBIN | wc -l</code> deve mostrar ~145 binários (solvers + utilitários). Erros em <code class="inline">PVReaders</code>/ParaView são esperados e inofensivos se você não instalou as libs de visualização.</div>
+<span class="prompt">$ </span>./Allwmake -j $(( $(nproc) / 2 ))  <span class="c"># limit RAM use: do not use every core at once</span></code></pre>
+  <div class="box ok"><b>Check that it worked:</b> after the build, <code class="inline">ls $FOAM_APPBIN | wc -l</code> should show ~145 binaries (solvers + utilities). Errors in <code class="inline">PVReaders</code>/ParaView are expected and harmless if you did not install the visualization libraries.</div>
 </section>
 
 <section id="s4">
-  <div class="step-head"><span class="step-num">04</span><h2>Compilar a AMGX (NVIDIA)</h2></div>
-  <p class="step-sub">É a biblioteca que faz o solve de verdade na GPU — um multigrid algébrico em CUDA puro, sem depender do OpenFOAM.</p>
+  <div class="step-head"><span class="step-num">04</span><h2>Build AMGX (NVIDIA)</h2></div>
+  <p class="step-sub">This is the library that does the actual solve on the GPU: an algebraic multigrid in pure CUDA, independent of OpenFOAM. <code class="inline">cuda/scripts/build_all.sh</code> does steps 4 to 6 for you; they are shown here so you know what it does.</p>
   <pre><code><span class="prompt">$ </span>cd ~/dev &amp;&amp; git clone --recursive https://github.com/NVIDIA/AMGX.git
 <span class="prompt">$ </span>cd AMGX &amp;&amp; mkdir build &amp;&amp; cd build
 <span class="prompt">$ </span>cmake -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
         -DCMAKE_CUDA_ARCHITECTURES="89" \
         -DCMAKE_BUILD_TYPE=Release ../
-<span class="prompt">$ </span>make -j4 all  <span class="c"># -j4, nao -j$(nproc) - evita estourar a RAM do WSL</span></code></pre>
-  <div class="box warn"><b>Troque o <code class="inline">89</code></b> pelo <code class="inline">compute_cap</code> da sua GPU, sem o ponto (8.9 → 89, 7.5 → 75, 8.6 → 86...).</div>
-  <p>Resultado esperado: <code class="inline">build/libamgxsh.so</code> e <code class="inline">build/libamgx.a</code>.</p>
+<span class="prompt">$ </span>make -j4 all  <span class="c"># -j4, not -j$(nproc): avoids running out of WSL RAM</span></code></pre>
+  <div class="box warn"><b>Replace <code class="inline">89</code></b> with your GPU's <code class="inline">compute_cap</code>, without the dot (8.9 → 89, 7.5 → 75, 8.6 → 86...).</div>
+  <p>Expected result: <code class="inline">build/libamgxsh.so</code> and <code class="inline">build/libamgx.a</code>.</p>
 </section>
 
 <section id="s5">
-  <div class="step-head"><span class="step-num">05</span><h2>Compilar o foam2csr</h2></div>
-  <p class="step-sub">Converte a matriz LDU do OpenFOAM para o formato CSR que a AMGX entende. Usa tipos do PETSc internamente — só como infraestrutura, não para resolver nada.</p>
+  <div class="step-head"><span class="step-num">05</span><h2>Build foam2csr</h2></div>
+  <p class="step-sub">Converts OpenFOAM's LDU matrix to the CSR format AMGX understands. It uses PETSc types internally, only as infrastructure, not to solve anything.</p>
   <pre><code><span class="prompt">$ </span>sudo apt-get install -y libpetsc-real-dev
 <span class="prompt">$ </span>cd ~/dev &amp;&amp; git clone https://github.com/mattmartineau/foam2csr.git</code></pre>
 
-  <p><b>O pacote do PETSc no Ubuntu usa nomes diferentes dos que o código espera.</b> Resolva com links simbólicos próprios — sem mexer no sistema:</p>
+  <p><b>Ubuntu's PETSc package uses different names from the ones the code expects.</b> Fix it with your own symbolic links, without touching the system:</p>
   <pre><code><span class="prompt">$ </span>mkdir -p ~/dev/compat/lib
 <span class="prompt">$ </span>ln -s /usr/lib/x86_64-linux-gnu/libtrilinos_zoltan.so ~/dev/compat/lib/libzoltan.so
 <span class="prompt">$ </span>ln -s /usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib/libpetsc_real.so \
         ~/dev/compat/lib/libpetsc.so</code></pre>
 
-  <p>Dois ajustes de uma linha no código clonado (nenhum dos dois é código do OpenFOAM Foundation):</p>
-  <pre><code><span class="c"># Make/options linha 7 — GNU Make nao entende comentario estilo C</span>
+  <p>Two one-line fixes in the cloned code (neither is OpenFOAM Foundation code):</p>
+  <pre><code><span class="c"># Make/options line 7: GNU Make does not understand C-style comments</span>
 <span class="prompt">$ </span>sed -i 's|/\* Failsafe.*\*/|# Failsafe|' Make/options
 
-<span class="c"># Make/nvcc — arquitetura e padrao C++ desatualizados</span>
+<span class="c"># Make/nvcc: outdated architecture and C++ standard</span>
 <span class="prompt">$ </span>sed -i 's/NVARCH = 70/NVARCH = 89/; s/c++14/c++17/' Make/nvcc</code></pre>
 
   <pre><code><span class="prompt">$ </span>export AMGX_INC=~/dev/AMGX/include  AMGX_LIB=~/dev/AMGX/build
@@ -237,188 +238,193 @@
 <span class="prompt">$ </span>export PETSC_INC=/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
 <span class="prompt">$ </span>export PETSC_LIB_DIR=~/dev/compat/lib
 <span class="prompt">$ </span>./Allwmake</code></pre>
-  <div class="box ok">Resultado esperado: <code class="inline">libfoam2csr.so</code> em <code class="inline">$FOAM_USER_LIBBIN</code>.</div>
+  <div class="box ok">Expected result: <code class="inline">libfoam2csr.so</code> in <code class="inline">$FOAM_USER_LIBBIN</code>.</div>
 </section>
 
 <section id="s6">
-  <div class="step-head"><span class="step-num">06</span><h2>Portar e compilar o amgx4Foam</h2></div>
-  <p class="step-sub">Este é o wrapper que registra <code class="inline">amgx</code> como um <code class="inline">lduMatrix::solver</code> de verdade dentro do OpenFOAM. O fork disponível na comunidade foi escrito para uma API mais antiga — precisa de 4 ajustes pra compilar na v14.</p>
+  <div class="step-head"><span class="step-num">06</span><h2>Port and build amgx4Foam</h2></div>
+  <p class="step-sub">This is the wrapper that registers <code class="inline">amgx</code> as a real <code class="inline">lduMatrix::solver</code> inside OpenFOAM. The fork available in the community was written for an older API and needs these changes to build on v14 (all of them are in <code class="inline">cuda/patches/amgx4foam.patch</code>).</p>
 
   <pre><code><span class="prompt">$ </span>cd ~/dev &amp;&amp; git clone https://github.com/maorz1998/amgx4foam.git</code></pre>
 
   <table>
-    <tr><th>Arquivo</th><th>Problema</th><th>Ajuste</th></tr>
-    <tr><td class="mono">linearSolverContextTable.H</td><td>v14 renomeou <code class="inline">MeshObject</code></td><td class="mono">→ DemandDrivenMeshObject&lt;…, DeletableMeshObject, …&gt;</td></tr>
-    <tr><td class="mono">amgxSolver.C</td><td>header removido, não usado</td><td class="mono">remove #include cyclicAMILduInterface.H</td></tr>
-    <tr><td class="mono">amgxSolver.C / *.H</td><td>v14 renomeou o método</td><td class="mono">thisDb() → db()</td></tr>
-    <tr><td class="mono">amgxLinearSolverContext.H</td><td>PETSc nunca inicializado</td><td class="mono">+ PetscInitializeNoArguments()</td></tr>
+    <tr><th>File</th><th>Problem</th><th>Fix</th></tr>
+    <tr><td class="mono">linearSolverContextTable.H</td><td>v14 renamed <code class="inline">MeshObject</code></td><td class="mono">→ DemandDrivenMeshObject&lt;…, DeletableMeshObject, …&gt;</td></tr>
+    <tr><td class="mono">amgxSolver.C</td><td>header removed, not used</td><td class="mono">drop #include cyclicAMILduInterface.H</td></tr>
+    <tr><td class="mono">amgxSolver.C / *.H</td><td>v14 renamed the method</td><td class="mono">thisDb() → db()</td></tr>
+    <tr><td class="mono">amgxLinearSolverContext.H</td><td>PETSc never initialized</td><td class="mono">+ PetscInitializeNoArguments()</td></tr>
   </table>
 
-  <div class="box warn"><b>Antes de compilar:</b> também troque <code class="inline">-I/usr/local/cuda-11.6/include</code> por <code class="inline">-I/usr/local/cuda/include</code> em <code class="inline">Make/options</code>, e <code class="inline">-lfoam_csr</code> por <code class="inline">-lfoam2csr</code> (nome real da lib do passo anterior).</div>
+  <div class="box warn"><b>Before building:</b> also replace <code class="inline">-I/usr/local/cuda-11.6/include</code> with <code class="inline">-I/usr/local/cuda/include</code> in <code class="inline">Make/options</code>, and <code class="inline">-lfoam_csr</code> with <code class="inline">-lfoam2csr</code> (the actual name of the library from the previous step).</div>
 
   <pre><code><span class="prompt">$ </span>export FOAM2CSR_INC=~/dev/foam2csr/src
 <span class="prompt">$ </span>export FOAM2CSR_LIB=$FOAM_USER_LIBBIN
 <span class="prompt">$ </span>cd ~/dev/amgx4foam &amp;&amp; ./Allwmake</code></pre>
-  <div class="box ok">Resultado esperado: <code class="inline">libamgxFoam.so</code> em <code class="inline">$FOAM_USER_LIBBIN</code> — sem dependências quebradas (<code class="inline">ldd libamgxFoam.so | grep "not found"</code> deve voltar vazio).</div>
+  <div class="box ok">Expected result: <code class="inline">libamgxFoam.so</code> in <code class="inline">$FOAM_USER_LIBBIN</code>, with no broken dependencies (<code class="inline">ldd libamgxFoam.so | grep "not found"</code> should print nothing).</div>
 </section>
 
 <section id="s7">
-  <div class="step-head"><span class="step-num">07</span><h2>Configurar um caso para usar a GPU</h2></div>
-  <p class="step-sub">Três arquivos num caso qualquer. Nenhum é código — são só dicionários de configuração do próprio OpenFOAM.</p>
+  <div class="step-head"><span class="step-num">07</span><h2>Set up a case to use the GPU</h2></div>
+  <p class="step-sub">Three files in any case. None of them is code: they are just OpenFOAM's own configuration dictionaries.</p>
 
-  <p><b><code class="inline">system/controlDict</code></b> — carrega a biblioteca:</p>
+  <p><b><code class="inline">system/controlDict</code></b>: load the library:</p>
   <pre><code>libs            ("libamgxFoam.so");</code></pre>
 
-  <p><b><code class="inline">system/fvSolution</code></b> — troca o solver do campo <code class="inline">p</code>:</p>
+  <p><b><code class="inline">system/fvSolution</code></b>: switch the solver of the <code class="inline">p</code> field:</p>
   <pre><code>p
 {
     solver          amgx;
     amgx
     {
         dict p;
-        caching { matrix { update always; } preconditioner { update always; } }
     }
-    tolerance       1e-06;
-    relTol          0.05;
 }</code></pre>
 
-  <p><b><code class="inline">system/amgxpOptions</code></b> — config nativa da AMGX (o nome segue o padrão <code class="inline">amgx</code> + <code class="inline">dict</code> + <code class="inline">Options</code>):</p>
+  <p><b><code class="inline">system/amgxpOptions</code></b>: AMGX's native configuration (the name follows the pattern <code class="inline">amgx</code> + <code class="inline">dict</code> + <code class="inline">Options</code>). Copy it from <code class="inline">cuda/config/amgxpOptions</code>; its core is:</p>
   <pre><code>{
     "config_version": 2,
     "solver": {
-        "solver": "PCG",
-        "preconditioner": { "solver": "AMG", "algorithm": "AGGREGATION", ... },
-        "tolerance": 1e-06,
+        "solver": "FGMRES",
+        "preconditioner": { "solver": "AMG", "algorithm": "CLASSICAL", "selector": "PMIS",
+                            "structure_reuse_levels": -1, ... },
+        "convergence": "RELATIVE_INI",
+        "tolerance": 0.1,
         "store_res_history": 1
     }
 }</code></pre>
-  <div class="box warn"><b>O critério de parada que vale é o deste JSON.</b> O <code class="inline">tolerance</code> e o <code class="inline">relTol</code> do <code class="inline">fvSolution</code> são ignorados pelo amgx4Foam. Para casos SIMPLE em regime permanente, ajuste <code class="inline">"tolerance"</code> aqui para o mesmo valor do <code class="inline">relTol</code> (ex.: <code class="inline">0.1</code>). Detalhes no §9.</div>
-  <div class="box warn"><b><code class="inline">store_res_history: 1</code> é obrigatório</b> — sem ele a AMGX converge normalmente mas trava ao tentar devolver o resíduo pro OpenFOAM reportar.</div>
+  <div class="box warn"><b>The stopping criterion that counts is the one in this JSON.</b> The <code class="inline">tolerance</code> and <code class="inline">relTol</code> in <code class="inline">fvSolution</code> are ignored by amgx4Foam. Set <code class="inline">"tolerance"</code> here to the same value as your <code class="inline">relTol</code> (e.g. <code class="inline">0.1</code>), and give <code class="inline">pFinal</code> its own dictionary and file for the final corrector. Details in §9.</div>
+  <div class="box warn"><b><code class="inline">store_res_history: 1</code> is mandatory</b>: without it AMGX converges normally but fails when handing the residual back for OpenFOAM to report.</div>
 </section>
 
 <section id="s8">
-  <div class="step-head"><span class="step-num">08</span><h2>Caso completo: prove a capacidade numérica</h2></div>
-  <p class="step-sub">Antes de confiar o <code class="inline">motorBike</code> (3,2 milhões de células, pode levar horas) pra GPU, rode isto — o tutorial <code class="inline">cavity</code> padrão do OpenFOAM, pequeno o bastante pra terminar em segundos. A ideia não é velocidade aqui: é <b>provar que o resultado bate com a referência CPU</b> antes de confiar em algo maior.</p>
+  <div class="step-head"><span class="step-num">08</span><h2>Full case: prove the numerics</h2></div>
+  <p class="step-sub">Before trusting the GPU with a large case, run this: OpenFOAM's standard <code class="inline">cavity</code> tutorial, small enough to finish in seconds. The point here is not speed: it is <b>proving that the result matches the CPU reference</b> before trusting anything bigger.</p>
 
-  <p><b>1. Prepare os dois casos (mesma malha, só o solver de <code class="inline">p</code> muda):</b></p>
+  <p><b>1. Prepare the two cases (same mesh, only the <code class="inline">p</code> solver changes):</b></p>
   <pre><code><span class="prompt">$ </span>mkdir -p ~/runs &amp;&amp; cd ~/runs
 <span class="prompt">$ </span>cp -r $FOAM_TUTORIALS/legacy/incompressible/icoFoam/cavity/cavity cavity_cpu
 <span class="prompt">$ </span>cp -r cavity_cpu cavity_gpu
 <span class="prompt">$ </span>cd cavity_cpu &amp;&amp; blockMesh &amp;&amp; cd ..</code></pre>
 
-  <p>No <code class="inline">cavity_gpu</code>, aplique os três arquivos do §7 (<code class="inline">libs</code> no <code class="inline">controlDict</code>, <code class="inline">solver amgx;</code> no <code class="inline">fvSolution</code>, e o <code class="inline">system/amgxpOptions</code>), depois decomponha os dois em 2 subdomínios (<code class="inline">numberOfSubdomains 2;</code> + <code class="inline">decomposePar</code>) — a GPU exige <code class="inline">-parallel</code>, então rode os dois casos do mesmo jeito para a comparação ser justa.</p>
+  <p>In <code class="inline">cavity_gpu</code>, apply the three files from §7 (<code class="inline">libs</code> in <code class="inline">controlDict</code>, <code class="inline">solver amgx;</code> in <code class="inline">fvSolution</code>, and <code class="inline">system/amgxpOptions</code>), then decompose both into 2 subdomains (<code class="inline">numberOfSubdomains 2;</code> + <code class="inline">decomposePar</code>). The GPU requires <code class="inline">-parallel</code>, so run both cases the same way for a fair comparison.</p>
 
-  <p><b>2. Rode os dois:</b></p>
+  <p><b>2. Run both:</b></p>
   <pre><code><span class="prompt">$ </span>cd ~/runs/cavity_cpu &amp;&amp; mpirun -np 2 icoFoam -parallel
 <span class="prompt">$ </span>cd ~/runs/cavity_gpu &amp;&amp; mpirun -np 2 icoFoam -parallel</code></pre>
   <pre><code><span class="c">AMGx:  Solving for p, Initial residual = 1.40477e-15, Final residual = 5.2475e-19, No Iterations 28
 time step continuity errors : sum local = 1.56388e-16, global = -3.53206e-20
 ExecutionTime = 9.5838 s  ClockTime = 9 s</span></code></pre>
-  <div class="box ok"><b>É isso:</b> a linha começando com <code class="inline">AMGx:</code> (em vez de <code class="inline">DICPCG:</code>) confirma que o solve de pressão rodou na GPU.</div>
+  <div class="box ok"><b>That's it:</b> the line starting with <code class="inline">AMGx:</code> (instead of <code class="inline">DICPCG:</code>) confirms that the pressure solve ran on the GPU.</div>
 
-  <p><b>3. Compare o campo de pressão final — isto é a prova:</b></p>
+  <p><b>3. Compare the final pressure field. This is the proof:</b></p>
   <pre><code><span class="prompt">$ </span>reconstructPar -case cavity_cpu &amp;&amp; reconstructPar -case cavity_gpu
 <span class="prompt">$ </span>diff cavity_cpu/0.5/p cavity_gpu/0.5/p | head</code></pre>
 
   <table>
-    <tr><th>Build</th><th>Resíduo final de p</th><th>Resultado</th></tr>
-    <tr><td>GCC, CPU (DICPCG)</td><td class="mono">8.638e-07</td><td>referência</td></tr>
-    <tr><td>Intel oneAPI, CPU (DICPCG)</td><td class="mono">8.638e-07</td><td>idêntico ao GCC, bit-a-bit</td></tr>
-    <tr><td>AMGX, GPU (PCG+AMG)</td><td class="mono">5.248e-19</td><td>convergiu; campo final ~1e-4 do CPU</td></tr>
+    <tr><th>Build</th><th>Final p residual</th><th>Result</th></tr>
+    <tr><td>GCC, CPU (DICPCG)</td><td class="mono">8.638e-07</td><td>reference</td></tr>
+    <tr><td>Intel oneAPI, CPU (DICPCG)</td><td class="mono">8.638e-07</td><td>identical to GCC, bit for bit</td></tr>
+    <tr><td>AMGX, GPU (PCG+AMG)</td><td class="mono">5.248e-19</td><td>converged; final field within ~1e-4 of the CPU</td></tr>
   </table>
-  <p style="font-size:0.86rem;color:var(--muted)">O <code class="inline">diff</code> não vai dar vazio — e não deveria. Métodos iterativos diferentes (agregação AMG vs. DIC) convergem pra mesma física por caminhos diferentes, ambos dentro da tolerância configurada (<code class="inline">1e-6</code>). O que importa é a <b>ordem de grandeza</b> da diferença, não zero.</p>
+  <p style="font-size:0.86rem;color:var(--muted)">The <code class="inline">diff</code> will not be empty, and it should not be. Different iterative methods (AMG vs. DIC) converge to the same physics along different paths, both within the configured tolerance (<code class="inline">1e-6</code>). What matters is the <b>order of magnitude</b> of the difference, not zero.</p>
 
-  <p><b>4. Veja o que você acabou de calcular</b> (ParaView, campo de <code class="inline">0.5/</code>):</p>
+  <p><b>4. Look at what you just computed</b> (ParaView, field at <code class="inline">0.5/</code>):</p>
   <div class="gallery">
     <figure>
-      <img src="frame_fine.png" alt="Streamtubes brancos sobre o campo de velocidade mostrando a recirculação da cavity" loading="lazy">
-      <figcaption>Streamtubes 3D sobre o campo de velocidade — o vórtice único clássico da cavity.</figcaption>
+      <img src="frame_fine.png" alt="White streamtubes over the velocity field showing the cavity recirculation" loading="lazy">
+      <figcaption>3D streamtubes over the velocity field: the cavity's classic single vortex.</figcaption>
     </figure>
     <figure>
-      <img src="pressure_contour.png" alt="Isóbaras de pressão com duas singularidades nos cantos superiores" loading="lazy">
-      <figcaption>Isóbaras de pressão (±4 Pa) — as duas singularidades nos cantos da tampa móvel.</figcaption>
+      <img src="pressure_contour.png" alt="Pressure isobars with two singularities at the top corners" loading="lazy">
+      <figcaption>Pressure isobars (±4 Pa): the two singularities at the corners of the moving lid.</figcaption>
     </figure>
   </div>
 
-  <div class="box warn"><b>Só depois disso</b> vale a pena partir pra um caso grande como o <code class="inline">motorBike</code> (malha via <code class="inline">snappyHexMesh</code>, centenas de milhares a milhões de células — mesmos três arquivos do §7, só trocando <code class="inline">solver GAMG;</code> por <code class="inline">solver amgx;</code> no bloco de <code class="inline">p</code> do <code class="inline">fvSolution</code> padrão do tutorial). É nessa escala que a GPU realmente compensa o overhead de inicialização — veja o comparativo no <a href="https://claude.ai/artifact/SD5AWqo56xYa6Rt3vgJcB3">relatório completo</a>.</div>
+  <div class="box warn"><b>Only after this</b> is it worth moving to a large case. For speed, use <code class="inline">tutorials/GPU/cavity3D</code> (transient, 0.5 to 3.4 M cells), where the GPU is 1.42× faster at 1 M cells and 2.09× at 3.4 M. See the numbers in the <a href="report.html">technical report</a> and in <code class="inline">cuda/benchmarks/</code>.</div>
 </section>
 
 <section id="s9">
-  <div class="step-head"><span class="step-num">09</span><h2>Antes de desistir da GPU</h2></div>
-  <p class="step-sub">Com a configuração ingênua, a GPU pode sair <b>mais lenta</b> que a CPU, ou travar no meio da rodada. Cada item abaixo aconteceu de verdade durante os testes deste tutorial, com o número medido. Nenhum deles significa que a GPU não serve: significa que ela foi usada fora das condições em que compensa.</p>
+  <div class="step-head"><span class="step-num">09</span><h2>Before giving up on the GPU</h2></div>
+  <p class="step-sub">With a naive configuration, the GPU can end up <b>slower</b> than the CPU, or crash mid-run. Every item below actually happened during the tests for this tutorial, with the measured number. None of them means the GPU is useless: it means it was used outside the conditions where it pays off.</p>
 
   <table>
-    <tr><th>Armadilha</th><th>O que medimos</th><th>Como evitar</th></tr>
+    <tr><th>Pitfall</th><th>What we measured</th><th>How to avoid it</th></tr>
     <tr>
-      <td><b>Tolerância do <code class="inline">fvSolution</code> ignorada</b></td>
-      <td>motorBike: com <code class="inline">relTol 0.1</code> no <code class="inline">fvSolution</code>, o GAMG na CPU parou em <b>2 iterações</b> por solve. A AMGX fez <b>41 iterações</b> e foi até resíduo 2e-08, porque seguiu o critério do JSON (redução de 1e-6). O código do amgx4Foam e do foam2csr não lê <code class="inline">tolerance</code> nem <code class="inline">relTol</code>.</td>
-      <td>Coloque o critério de parada no <code class="inline">amgxpOptions</code>: <code class="inline">"convergence": "RELATIVE_INI"</code> com <code class="inline">"tolerance": 0.1</code> reproduz o <code class="inline">relTol 0.1</code>. Sem isso a GPU faz muito mais trabalho que a CPU e a comparação fica injusta.</td>
+      <td><b><code class="inline">fvSolution</code> tolerance ignored</b></td>
+      <td>motorBike: with <code class="inline">relTol 0.1</code> in <code class="inline">fvSolution</code>, GAMG on the CPU stopped after <b>2 iterations</b> per solve. AMGX took <b>41 iterations</b> and went down to a residual of 2e-08, because it followed the JSON criterion (1e-6 reduction). The amgx4Foam and foam2csr code reads neither <code class="inline">tolerance</code> nor <code class="inline">relTol</code>.</td>
+      <td>Put the stopping criterion in <code class="inline">amgxpOptions</code>: <code class="inline">"convergence": "RELATIVE_INI"</code> with <code class="inline">"tolerance": 0.1</code> reproduces <code class="inline">relTol 0.1</code>. Without it the GPU does much more work than the CPU and the comparison is unfair.</td>
     </tr>
     <tr>
-      <td><b>Malha pequena</b></td>
-      <td>cavity, 40 mil células, 10 passos: CPU <b>2,3 s</b> × GPU <b>6,4 s</b></td>
-      <td>O custo fixo de montar o problema na GPU domina em malhas pequenas. Avalie a GPU só em malhas grandes (centenas de milhares de células para cima). Use a cavity apenas para validar o resultado, nunca para medir velocidade.</td>
+      <td><b>Small mesh</b></td>
+      <td>cavity, 40 k cells, 10 steps: CPU <b>2.3 s</b> vs. GPU <b>6.4 s</b></td>
+      <td>The fixed cost of setting up the problem on the GPU dominates on small meshes. Judge the GPU only on large meshes (hundreds of thousands of cells and up). Use the cavity only to validate the result, never to measure speed.</td>
     </tr>
     <tr>
-      <td><b>Reconstruir o AMG a cada iteração</b></td>
-      <td>Na cavity, o setup já era 38% do tempo de cada solve. Com o reaproveitamento ligado, o setup do motorBike caiu de <b>0,49 s</b> para <b>0,15 s</b> por solve.</td>
-      <td>Adicione <code class="inline">"structure_reuse_levels": -1</code> no bloco <code class="inline">preconditioner</code> do <code class="inline">amgxpOptions</code>. A matriz continua sendo atualizada em toda iteração; só o padrão de agregação do multigrid é reaproveitado.</td>
+      <td><b>Rebuilding the AMG every iteration</b></td>
+      <td>On the cavity, setup was already 38% of each solve. With reuse turned on, the motorBike setup dropped from <b>0.49 s</b> to <b>0.15 s</b> per solve.</td>
+      <td>Add <code class="inline">"structure_reuse_levels": -1</code> to the <code class="inline">preconditioner</code> block of <code class="inline">amgxpOptions</code> (already in the repository file). The matrix is still updated every iteration; only the multigrid hierarchy pattern is reused.</td>
     </tr>
     <tr>
-      <td><b>Cache <code class="inline">periodic</code> do amgx4Foam</b></td>
-      <td>Leitura do código: nesse modo a <b>matriz</b> deixa de ser atualizada nas iterações intermediárias, não só o precondicionador.</td>
-      <td><b>Não use</b> <code class="inline">periodic</code>, <code class="inline">adaptive</code> nem <code class="inline">never</code>. A GPU resolveria a pressão de uma iteração anterior e o resultado ficaria fisicamente errado, mesmo convergindo. Mantenha <code class="inline">update always;</code> e use o reaproveitamento da linha acima.</td>
+      <td><b>amgx4Foam <code class="inline">periodic</code> cache</b></td>
+      <td>From the code: in this mode the <b>matrix</b> stops being updated in the intermediate iterations, not just the preconditioner.</td>
+      <td><b>Do not use</b> <code class="inline">periodic</code>, <code class="inline">adaptive</code> or <code class="inline">never</code>. The GPU would solve the pressure from an earlier iteration and the result would be physically wrong, even though it converges. Keep <code class="inline">update always;</code> (the default) and use the reuse from the row above.</td>
     </tr>
     <tr>
-      <td><b>Processos MPI demais numa GPU só</b></td>
-      <td>Com 8 processos, cada um abre o próprio contexto CUDA na mesma placa de 6 GB.</td>
-      <td>Comece com 2 a 4 processos por GPU. Mais processos ajudam a parte que roda na CPU, mas disputam a memória da placa.</td>
+      <td><b>The wrong AMGX recipe</b></td>
+      <td>cavity3D, 1 M cells: <code class="inline">PCG_AGGREGATION_JACOBI</code> took 22.8 iterations and 0.766 s/step, <b>slower than the CPU</b> (0.575 s). <code class="inline">FGMRES_CLASSICAL_AGGRESSIVE_PMIS</code>: 5.5 iterations, 0.417 s/step.</td>
+      <td>Use the repository default (PMIS) and compare recipes on your own case with <code class="inline">cuda/scripts/tune_amgx.py</code>.</td>
     </tr>
     <tr>
-      <td><b>Outros programas usando a GPU</b></td>
-      <td>motorBike caiu na iteração 289 de 500 com <code class="inline">Cuda failure: 'unknown error'</code> e <code class="inline">Out of resource</code>. A AMGX estava estável em 3,0 GB; o ParaView e o desktop do Windows ocupavam o resto da placa.</td>
-      <td>Feche ParaView, jogos e abas pesadas do navegador antes de uma rodada longa. Em notebook, a mesma GPU também desenha a tela. Confira a memória livre com <code class="inline">nvidia-smi</code> antes de começar.</td>
+      <td><b>Too many MPI ranks on a single GPU</b></td>
+      <td>With 8 ranks, each opens its own CUDA context on the same 6 GB card, and takes host RAM too.</td>
+      <td>Start with 2 to 4 ranks per GPU. More ranks help the part that runs on the CPU, but compete for the card's memory.</td>
     </tr>
     <tr>
-      <td><b>Memória do WSL2 alta demais</b></td>
-      <td>Com 12 GB de 15,7 GB para o WSL, o Windows ficou com 0,1 GB livre e reiniciou a máquina virtual, matando um build em andamento.</td>
-      <td>Deixe pelo menos metade da RAM para o Windows no <code class="inline">.wslconfig</code> (ex.: <code class="inline">memory=8GB</code> numa máquina de 16 GB) e compile com <code class="inline">make -j4</code>.</td>
+      <td><b>Other programs using the GPU</b></td>
+      <td>motorBike crashed at iteration 289 of 500 with <code class="inline">Cuda failure: 'unknown error'</code> and <code class="inline">Out of resource</code>. AMGX was stable at 3.0 GB; ParaView and the Windows desktop held the rest of the card.</td>
+      <td>Close ParaView, games and heavy browser tabs before a long run. On a laptop, the same GPU also draws the screen. Check free memory with <code class="inline">nvidia-smi</code> before starting.</td>
+    </tr>
+    <tr>
+      <td><b>WSL2 memory</b></td>
+      <td>With 12 of 15.7 GB given to WSL, Windows was left with 0.1 GB free and restarted the virtual machine, killing a build in progress. Long runs also grow WSL's page cache, which is not returned to Windows.</td>
+      <td>Leave at least half of the RAM to Windows in <code class="inline">.wslconfig</code> (e.g. <code class="inline">memory=8GB</code> on a 16 GB machine), build with <code class="inline">make -j4</code>, close other programs, and run <code class="inline">wsl --shutdown</code> between long runs to free the cache.</td>
     </tr>
   </table>
 
-  <h3 style="margin-top:26px;font-size:1.02rem">O que esperar: medido no motorBike</h3>
-  <p style="font-size:0.9rem;color:var(--muted);margin-top:4px">3,2 M células, 4 processos, <code class="inline">foamRun</code> com <code class="inline">incompressibleFluid</code> (SIMPLE), tempo médio das iterações 10 a 100.</p>
+  <h3 style="margin-top:26px;font-size:1.02rem">What to expect: measured on the motorBike</h3>
+  <p style="font-size:0.9rem;color:var(--muted);margin-top:4px">3.2 M cells, 4 ranks, <code class="inline">foamRun</code> with <code class="inline">incompressibleFluid</code> (SIMPLE), average time of iterations 10 to 100.</p>
   <table>
-    <tr><th>Configuração</th><th>s / iteração</th><th>Iterações do solver de p</th><th>Cd (it. 100)</th></tr>
-    <tr><td>Primeira tentativa: GPU com tolerância do JSON (1e-6), 8 processos</td><td class="mono">3,7</td><td class="mono">41</td><td class="mono">—</td></tr>
-    <tr><td>CPU, GAMG</td><td class="mono">2,550</td><td class="mono">2,0</td><td class="mono">0,7210</td></tr>
-    <tr><td>GPU, tolerância igualada (0,1)</td><td class="mono">2,522</td><td class="mono">1,4</td><td class="mono">0,7214</td></tr>
-    <tr><td>GPU, tolerância igualada + reaproveitamento do AMG</td><td class="mono"><b>2,478</b></td><td class="mono">1,4</td><td class="mono">0,7200</td></tr>
+    <tr><th>Configuration</th><th>s / iteration</th><th>p solver iterations</th><th>Cd (it. 100)</th></tr>
+    <tr><td>First attempt: GPU with the JSON tolerance (1e-6), 8 ranks</td><td class="mono">3.7</td><td class="mono">41</td><td class="mono">—</td></tr>
+    <tr><td>CPU, GAMG</td><td class="mono">2.550</td><td class="mono">2.0</td><td class="mono">0.7210</td></tr>
+    <tr><td>GPU, matched tolerance (0.1)</td><td class="mono">2.522</td><td class="mono">1.4</td><td class="mono">0.7214</td></tr>
+    <tr><td>GPU, matched tolerance + AMG reuse</td><td class="mono"><b>2.478</b></td><td class="mono">1.4</td><td class="mono">0.7200</td></tr>
   </table>
-  <p style="font-size:0.9rem">Com a configuração certa, a GPU empata com a CPU e o resultado físico é o mesmo. Ela não fica muito à frente porque, nesse caso, <b>o solve de pressão é só 0,26 s de cada iteração de 2,48 s (cerca de 10%)</b>. Os outros 90% são as equações de velocidade e turbulência, a montagem das matrizes e o pós-processamento, que continuam na CPU. Mesmo com um solve de pressão instantâneo, o ganho máximo seria de uns 12%.</p>
+  <p style="font-size:0.9rem">With the right configuration, the GPU ties with the CPU and the physical result is the same. It does not pull far ahead because, in this case, <b>the pressure solve is only 0.26 s of each 2.48 s iteration (about 10%)</b>. The other 90% are the velocity and turbulence equations, matrix assembly and post-processing, which stay on the CPU. Even with an instant pressure solve, the most one could gain is ~12%.</p>
 
-  <div class="box warn"><b>Onde a GPU compensa:</b> nos casos em que o solve de pressão domina a iteração. Isso acontece em escoamentos transientes (PISO/PIMPLE) com vários correctores de pressão e <code class="inline">pFinal</code> com <code class="inline">relTol 0</code>, em malhas grandes. Antes de investir num caso, olhe o log da CPU: se o GAMG faz só 1 a 3 iterações por solve, a pressão já é barata e a GPU tem pouco a ganhar.</div>
+  <div class="box warn"><b>Where the GPU pays off:</b> in cases where the pressure solve dominates the iteration. That happens in transient flows (PISO/PIMPLE) with several pressure correctors and <code class="inline">pFinal</code> with a tight <code class="inline">relTol</code>, on large meshes. On the cavity3D the GPU goes from 1.03× at 0.5 M cells to 2.09× at 3.4 M. Before investing in a case, look at the CPU log: if GAMG takes only 1 to 3 iterations per solve, the pressure is already cheap and the GPU has little to gain.</div>
 
-  <div class="box ok"><b>Regra prática:</b> valide o resultado na cavity (§8), meça o desempenho num caso grande, iguale a tolerância do JSON ao <code class="inline">relTol</code>, use 2 a 4 processos, reaproveite a estrutura do AMG e deixe a GPU livre durante a rodada. Só depois disso compare com a CPU.</div>
+  <div class="box ok"><b>Rule of thumb:</b> validate the result on the cavity (§8), measure performance on a large case, match the JSON tolerance to <code class="inline">relTol</code>, use the PMIS recipe and 2 to 4 ranks, reuse the AMG structure and keep the GPU free during the run. Only then compare with the CPU.</div>
 </section>
 
 <section id="s10">
-  <div class="step-head"><span class="step-num">10</span><h2>Solução de problemas</h2></div>
+  <div class="step-head"><span class="step-num">10</span><h2>Troubleshooting</h2></div>
   <table>
-    <tr><th>Sintoma</th><th>Causa</th></tr>
-    <tr><td><code class="mono">Unsupported gpu architecture 'compute_70'</code></td><td><code class="inline">NVARCH</code>/<code class="inline">CMAKE_CUDA_ARCHITECTURES</code> não bate com o <code class="inline">compute_cap</code> real da GPU (§1)</td></tr>
-    <tr><td><code class="mono">Unknown symmetric matrix solver amgx</code></td><td><code class="inline">libs ("libamgxFoam.so");</code> faltando ou mal posicionado no <code class="inline">controlDict</code></td></tr>
-    <tr><td><code class="mono">MPI_Get_processor_name() called before MPI_INIT</code></td><td>rodou sem <code class="inline">mpirun -parallel</code> — veja §8</td></tr>
-    <tr><td><code class="mono">attempt to run parallel on 1 processor</code></td><td>o OpenFOAM recusa <code class="inline">-parallel</code> com <code class="inline">numberOfSubdomains 1</code> — use pelo menos 2</td></tr>
-    <tr><td>Segfault dentro de <code class="inline">PetscVFPrintfDefault</code></td><td>PETSc não inicializado — confirme o ajuste do §6</td></tr>
-    <tr><td><code class="mono">missing separator</code> num <code class="inline">Make/options</code> ou <code class="inline">Make/files</code></td><td>comentário em estilo C (<code class="inline">/* */</code>) onde o GNU Make só aceita <code class="inline">#</code></td></tr>
-    <tr><td><code class="mono">Cuda failure: 'unknown error'</code> seguido de <code class="mono">Out of resource</code> no meio da rodada</td><td>a memória da GPU acabou: outros programas usando a placa ou processos MPI demais. Veja §9</td></tr>
-    <tr><td><code class="mono">cannot find file ".../processor0/0/p"</code></td><td>a pasta <code class="inline">0/</code> da raiz do caso foi apagada antes do <code class="inline">decomposePar</code> — restaure as condições iniciais antes de decompor</td></tr>
+    <tr><th>Symptom</th><th>Cause</th></tr>
+    <tr><td><code class="mono">Unsupported gpu architecture 'compute_70'</code></td><td><code class="inline">NVARCH</code>/<code class="inline">CMAKE_CUDA_ARCHITECTURES</code> does not match the GPU's actual <code class="inline">compute_cap</code> (§1)</td></tr>
+    <tr><td><code class="mono">Unknown symmetric matrix solver amgx</code></td><td><code class="inline">libs ("libamgxFoam.so");</code> missing or misplaced in <code class="inline">controlDict</code></td></tr>
+    <tr><td><code class="mono">MPI_Get_processor_name() called before MPI_INIT</code></td><td>ran without <code class="inline">mpirun -parallel</code>; see §8</td></tr>
+    <tr><td><code class="mono">attempt to run parallel on 1 processor</code></td><td>OpenFOAM refuses <code class="inline">-parallel</code> with <code class="inline">numberOfSubdomains 1</code>; use at least 2</td></tr>
+    <tr><td>Segfault inside <code class="inline">PetscVFPrintfDefault</code></td><td>PETSc not initialized; check the fix in §6</td></tr>
+    <tr><td><code class="mono">missing separator</code> in a <code class="inline">Make/options</code> or <code class="inline">Make/files</code></td><td>C-style comment (<code class="inline">/* */</code>) where GNU Make only accepts <code class="inline">#</code></td></tr>
+    <tr><td><code class="mono">Cuda failure: 'unknown error'</code> followed by <code class="mono">Out of resource</code> mid-run</td><td>GPU memory ran out: other programs using the card or too many MPI ranks. See §9</td></tr>
+    <tr><td>Processes <code class="mono">Killed</code> while initializing AMGX</td><td>host RAM ran out (Linux OOM killer): each rank creates CUDA contexts and AMGX buffers in host memory. Use fewer ranks, a smaller mesh or more RAM for WSL</td></tr>
+    <tr><td><code class="mono">cannot find file ".../processor0/0/p"</code></td><td>the case's <code class="inline">0/</code> folder was deleted before <code class="inline">decomposePar</code>; restore the initial conditions before decomposing</td></tr>
   </table>
 </section>
 
 <footer>
-  Tutorial baseado numa compilação real, numa RTX 4050 Laptop (sm_89) sobre WSL2. "OpenFOAM" é marca registrada da OpenFOAM Foundation — este não é um material oficial.
+  Tutorial based on a real build, on an RTX 4050 Laptop (sm_89) under WSL2. "OpenFOAM" is a registered trademark of the OpenFOAM Foundation; this is not official material.
 </footer>
 
 </main>

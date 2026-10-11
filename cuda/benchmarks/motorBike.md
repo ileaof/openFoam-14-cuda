@@ -1,39 +1,39 @@
-# Benchmark: motorBike, CPU × GPU
+# Benchmark: motorBike, CPU vs. GPU
 
-Medido em 10/10/2026 numa RTX 4050 Laptop (6 GB, sm_89), WSL2 Ubuntu 22.04,
-CUDA 13.2, OpenFOAM-14 compilado com GCC 11.4.
+Measured on 2026-10-10 on an RTX 4050 Laptop (6 GB, sm_89), WSL2 Ubuntu 22.04,
+CUDA 13.2, OpenFOAM-14 built with GCC 11.4.
 
-## Caso
+## Case
 
-- Tutorial `incompressibleFluid/motorBike`, malha do `snappyHexMesh`: **3.215.800 células**
-- `foamRun` com `incompressibleFluid` (SIMPLE, regime permanente)
-- 4 processos MPI, decomposição `hierarchical (2 2 1)`
-- Tempo médio por iteração entre as iterações 10 e 100 (exclui leitura da malha e o primeiro setup)
+- Tutorial `incompressibleFluid/motorBike`, `snappyHexMesh` mesh: **3,215,800 cells**
+- `foamRun` with `incompressibleFluid` (SIMPLE, steady state)
+- 4 MPI ranks, `hierarchical (2 2 1)` decomposition
+- Average time per iteration between iterations 10 and 100 (excludes mesh reading and the first setup)
 
-## Resultado
+## Result
 
-| Configuração | s / iteração | Iterações do solver de p | Cd (it. 100) |
+| Configuration | s / iteration | p solver iterations | Cd (it. 100) |
 |---|---|---|---|
-| GPU, tolerância do JSON (1e-6), 8 processos¹ | 3,7 | 41 | — |
-| CPU, GAMG (`relTol 0.1`) | 2,550 | 2,0 | 0,7210 |
-| GPU, AMGX `tolerance 0.1` | 2,522 | 1,4 | 0,7214 |
-| GPU, AMGX `tolerance 0.1` + `structure_reuse_levels -1` | **2,478** | 1,4 | 0,7200 |
+| GPU, JSON tolerance (1e-6), 8 ranks¹ | 3.7 | 41 | — |
+| CPU, GAMG (`relTol 0.1`) | 2.550 | 2.0 | 0.7210 |
+| GPU, AMGX `tolerance 0.1` | 2.522 | 1.4 | 0.7214 |
+| GPU, AMGX `tolerance 0.1` + `structure_reuse_levels -1` | **2.478** | 1.4 | 0.7200 |
 
-¹ Primeira tentativa, antes de descobrir que o amgx4Foam ignora `tolerance`/`relTol` do `fvSolution`.
+¹ First attempt, before finding out that amgx4Foam ignores the `tolerance`/`relTol` in `fvSolution`.
 
-## Leitura
+## Reading
 
-- Com o critério de parada igualado, a GPU **empata** com a CPU e o resultado físico é o mesmo.
-- O solve de pressão na AMGX leva **0,26 s** de cada iteração de 2,48 s, cerca de **10%**. O restante (velocidade, turbulência, montagem das matrizes, pós-processamento) roda na CPU. Pela lei de Amdahl, o ganho máximo possível acelerando só a pressão é de uns 12%.
-- O reaproveitamento da estrutura do AMG reduziu o setup de 0,49 s para 0,15 s por solve.
-- A GPU deve compensar quando a pressão domina a iteração: escoamentos transientes (PISO/PIMPLE) com vários correctores e `pFinal relTol 0`, em malhas grandes.
+- With the stopping criterion matched, the GPU **ties** with the CPU and the physical result is the same.
+- The AMGX pressure solve takes **0.26 s** of each 2.48 s iteration, about **10%**. The rest (velocity, turbulence, matrix assembly, post-processing) runs on the CPU. By Amdahl's law, the most one can gain by speeding up only the pressure is ~12%.
+- Reusing the AMG structure cut the setup from 0.49 s to 0.15 s per solve.
+- The GPU should pay off when the pressure dominates the iteration: transient flows (PISO/PIMPLE) with several correctors and `pFinal relTol 0`, on large meshes. That is what [cavity3D.md](cavity3D.md) shows.
 
-## Reproduzir
+## Reproduce
 
 ```bash
 source cuda/scripts/env.sh
 cp -r $FOAM_TUTORIALS/incompressibleFluid/motorBike/motorBike ~/runs/mb
-# siga o Allrun do tutorial até o potentialFoam, com 4 subdomínios
-# GPU: copie cuda/config/amgxpOptions para system/ e troque o solver de p (ver cuda/README.md)
+# follow the tutorial's Allrun up to potentialFoam, with 4 subdomains
+# GPU: copy cuda/config/amgxpOptions to system/ and switch the p solver (see cuda/README.md)
 mpirun -np 4 foamRun -parallel
 ```

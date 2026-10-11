@@ -1,66 +1,66 @@
-# Tutoriais com a pressão na GPU
+# Tutorials with the pressure on the GPU
 
-Casos prontos para rodar com o solver `amgx` (AMGX da NVIDIA, via `libamgxFoam.so`).
-Só entram aqui casos em que **medimos ganho** da GPU sobre a CPU nesta árvore; os
-números estão em [`cuda/benchmarks/`](../../cuda/benchmarks/).
+Ready-to-run cases with the `amgx` solver (NVIDIA AMGX, through `libamgxFoam.so`).
+Only cases where we **measured a gain** of the GPU over the CPU in this tree are included;
+the numbers are in [`cuda/benchmarks/`](../../cuda/benchmarks/).
 
-Antes, compile a parte GPU ([`cuda/README.md`](../../cuda/README.md)) e, em todo
-terminal novo:
+First build the GPU part ([`cuda/README.md`](../../cuda/README.md)) and, in every new
+terminal:
 
 ```bash
 source ~/dev/OpenFOAM-14/cuda/scripts/env.sh
 ```
 
-| Caso | Solver | Malha | Ganho medido (GPU × CPU, 4 processos) |
+| Case | Solver | Mesh | Measured speed-up (GPU vs. CPU, 4 ranks) |
 |---|---|---|---|
-| [`cavity3D`](cavity3D/) | `icoFoam`, PISO transiente | 80³ = 0,5 M células | 1,03× (empate) |
-| | | 100³ = 1 M células | 1,42× (0,403 × 0,570 s/passo) |
-| | | 125³ = 2 M células | 1,54× (0,834 × 1,283 s/passo) |
-| | | 140³ = 2,7 M células | 1,62× (1,192 × 1,932 s/passo) |
-| | | 150³ = 3,4 M células | 2,09× (1,485 × 3,110 s/passo) |
+| [`cavity3D`](cavity3D/) | `icoFoam`, transient PISO | 80³ = 0.5 M cells | 1.03× (tie) |
+| | | 100³ = 1 M cells | 1.42× (0.403 vs. 0.570 s/step) |
+| | | 125³ = 2 M cells | 1.54× (0.834 vs. 1.283 s/step) |
+| | | 140³ = 2.7 M cells | 1.62× (1.192 vs. 1.932 s/step) |
+| | | 150³ = 3.4 M cells | 2.09× (1.485 vs. 3.110 s/step) |
 
 ```bash
 cd tutorials/GPU/cavity3D
-./Allrun gpu            # pressão na GPU
-./Allrun cpu            # a mesma coisa com GAMG, para comparar
-N=150 ./Allrun gpu      # malha maior: é onde a GPU se destaca
+./Allrun gpu            # pressure on the GPU
+./Allrun cpu            # the same with GAMG, for comparison
+N=150 ./Allrun gpu      # bigger mesh: this is where the GPU stands out
 ```
 
-`./Allrun` nesta pasta roda todos os casos em modo `gpu`. Sem a `libamgxFoam.so`
-ele não faz nada, para não interromper a bateria de tutoriais do OpenFOAM em
-máquinas sem GPU.
+`./Allrun` in this folder runs every case in `gpu` mode. Without `libamgxFoam.so`
+it does nothing, so it does not break the OpenFOAM tutorial loop on machines
+without a GPU.
 
-## Por que outros casos não estão aqui
+## Why other cases are not here
 
-A GPU acelera só o solve de pressão. Se a pressão é uma parte pequena do passo,
-o ganho total some (lei de Amdahl), mesmo com a GPU funcionando bem.
+The GPU only speeds up the pressure solve. If the pressure is a small part of the step,
+the overall gain vanishes (Amdahl's law), even with the GPU working well.
 
-| Caso | O que medimos |
+| Case | What we measured |
 |---|---|
-| `incompressibleFluid/motorBike` (3,2 M células, SIMPLE) | empate: 2,48 × 2,55 s/iteração; a pressão é ~10% da iteração |
-| `multicomponentFluid/smallPoolFire3D` (216 mil células) | na CPU, 0,28 s/passo com só 3,7 iterações de GAMG por solve de `p_rgh`; o tempo vai para radiação (`fvDOM`) e química |
+| `incompressibleFluid/motorBike` (3.2 M cells, SIMPLE) | tie: 2.48 vs. 2.55 s/iteration; the pressure is ~10% of the iteration |
+| `multicomponentFluid/smallPoolFire3D` (216 k cells) | on the CPU, 0.28 s/step with only 3.7 GAMG iterations per `p_rgh` solve; the time goes to radiation (`fvDOM`) and chemistry |
 
-Regra prática: no log da CPU, se o `GAMG` faz só 1 a 3 iterações por solve de
-pressão, a GPU tem pouco a ganhar. Se as iterações crescem com a malha, como na
-cavity3D (7,4 → 15,6 de 1 M para 3,4 M células, enquanto a AMGX fica em ~5,5), é aí
-que ela compensa.
+Rule of thumb: in the CPU log, if `GAMG` takes only 1 to 3 iterations per pressure
+solve, the GPU has little to gain. If the iterations grow with the mesh, as on the
+cavity3D (3.9 → 14.6 from 0.5 M to 3.4 M cells, while AMGX stays at ~5.5), that is
+where it pays off.
 
-## Ajustar a receita da AMGX ao seu caso
+## Tune the AMGX recipe to your case
 
-A configuração faz muita diferença. Na cavity3D com 1 M células:
+The configuration makes a big difference. On the cavity3D with 1 M cells (2026-10-10):
 
-| Receita AMGX | s/passo | Iterações de p |
+| AMGX recipe | s/step | p iterations |
 |---|---:|---:|
-| `FGMRES_CLASSICAL_AGGRESSIVE_PMIS` (padrão deste repositório) | **0,417** | 5,5 |
-| `PCG_CLASSICAL_V_JACOBI` | 0,448 | 8,7 |
-| `PCG_CLASSICAL_F_JACOBI` | 0,641 | 3,5 |
-| `agg_cheb4` | 0,663 | 7,5 |
-| `PCG_AGGREGATION_JACOBI` (padrão antigo) | 0,766 | 22,8 |
-| `FGMRES_AGGREGATION_DILU` | 0,942 | 7,7 |
+| `FGMRES_CLASSICAL_AGGRESSIVE_PMIS` (this repository's default) | **0.417** | 5.5 |
+| `PCG_CLASSICAL_V_JACOBI` | 0.448 | 8.7 |
+| `PCG_CLASSICAL_F_JACOBI` | 0.641 | 3.5 |
+| `agg_cheb4` | 0.663 | 7.5 |
+| `PCG_AGGREGATION_JACOBI` (old default) | 0.766 | 22.8 |
+| `FGMRES_AGGREGATION_DILU` | 0.942 | 7.7 |
 
-Para comparar receitas no seu caso (já decomposto, com `endTime` curto):
+To compare recipes on your own case (already decomposed, with a short `endTime`):
 
 ```bash
-python3 cuda/scripts/tune_amgx.py --case <caso> --solver foamRun --np 4 \
-    --dict p=0.05 --dict pFinal=0.001       # use o relTol de cada dicionário
+python3 cuda/scripts/tune_amgx.py --case <case> --solver foamRun --np 4 \
+    --dict p=0.05 --dict pFinal=0.001       # use each dictionary's relTol
 ```

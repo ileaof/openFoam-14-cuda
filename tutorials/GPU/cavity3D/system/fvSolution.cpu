@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// Critério só relativo (tolerance 0) para casar exatamente com o RELATIVE_INI da AMGX
+// Relative criterion only (tolerance 0), to match AMGX's RELATIVE_INI exactly
 solvers
 {
     p

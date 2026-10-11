@@ -1,14 +1,14 @@
 #!/bin/bash
-# Clona AMGX, foam2csr e amgx4foam nos commits testados, aplica os patches
-# deste repositório e compila tudo.
+# Clones AMGX, foam2csr and amgx4foam at the tested commits, applies this
+# repository's patches and builds everything.
 #
-# Uso (a partir da raiz do OpenFOAM-14, já compilado):
+# Usage (from the OpenFOAM-14 root, already built):
 #   bash cuda/scripts/build_all.sh 89
-# O argumento é o compute capability da GPU sem o ponto
+# The argument is the GPU's compute capability without the dot
 # (nvidia-smi --query-gpu=compute_cap --format=csv): 8.9 -> 89, 8.6 -> 86, 7.5 -> 75.
 set -euo pipefail
 
-ARCH="${1:?informe o compute capability sem ponto, ex.: 89}"
+ARCH="${1:?give the compute capability without the dot, e.g. 89}"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 source "$HERE/scripts/env.sh"
 mkdir -p "$CUDA_DEPS_DIR"
@@ -27,10 +27,10 @@ clone_at () {
 apply_patch () {
   local dir=$1 patch=$2
   if git -C "$dir" apply --reverse --check "$patch" 2>/dev/null; then
-    echo "  patch já aplicado: $(basename "$patch")"
+    echo "  patch already applied: $(basename "$patch")"
   else
     git -C "$dir" apply "$patch"
-    echo "  patch aplicado: $(basename "$patch")"
+    echo "  patch applied: $(basename "$patch")"
   fi
 }
 
@@ -44,7 +44,7 @@ mkdir -p "$CUDA_DEPS_DIR/AMGX/build"
   make -j4 all > make.log )
 test -f "$AMGX_LIB/libamgxsh.so"
 
-echo "== 2/4 links de compatibilidade (nomes do empacotamento Debian)"
+echo "== 2/4 compatibility links (Debian packaging names)"
 mkdir -p "$CUDA_DEPS_DIR/compat/lib"
 ln -sf /usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib/libpetsc_real.so "$CUDA_DEPS_DIR/compat/lib/libpetsc.so"
 ln -sf /usr/lib/x86_64-linux-gnu/libtrilinos_zoltan.so "$CUDA_DEPS_DIR/compat/lib/libzoltan.so"
@@ -63,6 +63,6 @@ apply_patch "$CUDA_DEPS_DIR/amgx4foam" "$HERE/patches/amgx4foam.patch"
 test -f "$FOAM_USER_LIBBIN/libamgxFoam.so"
 
 if ldd "$FOAM_USER_LIBBIN/libamgxFoam.so" | grep -q "not found"; then
-  echo "ERRO: dependências não resolvidas:"; ldd "$FOAM_USER_LIBBIN/libamgxFoam.so" | grep "not found"; exit 1
+  echo "ERROR: unresolved dependencies:"; ldd "$FOAM_USER_LIBBIN/libamgxFoam.so" | grep "not found"; exit 1
 fi
-echo "OK: libamgxFoam.so pronto em $FOAM_USER_LIBBIN"
+echo "OK: libamgxFoam.so ready in $FOAM_USER_LIBBIN"

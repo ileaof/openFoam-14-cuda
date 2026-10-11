@@ -1,65 +1,65 @@
-# Solver de pressão na GPU (AMGX) para o OpenFOAM-14
+# GPU pressure solver (AMGX) for OpenFOAM-14
 
-Esta pasta acopla o [AMGX](https://github.com/NVIDIA/AMGX) da NVIDIA ao OpenFOAM-14
-como um `lduMatrix::solver` chamado `amgx`, selecionado no `fvSolution`.
-**Nenhum arquivo do OpenFOAM Foundation é alterado**: todas as mudanças estão em
-dois projetos de terceiros, aplicadas como patches.
+This folder couples NVIDIA's [AMGX](https://github.com/NVIDIA/AMGX) to OpenFOAM-14
+as an `lduMatrix::solver` called `amgx`, selected in `fvSolution`.
+**No OpenFOAM Foundation file is changed**: every change lives in two third-party
+projects and is applied as patches.
 
 ```
 OpenFOAM-14  →  amgx4foam (libamgxFoam.so)  →  foam2csr (libfoam2csr.so)  →  AMGX (libamgxsh.so, GPU)
 ```
 
-| Pasta | Conteúdo |
+| Folder | Contents |
 |---|---|
-| `patches/` | correções para o foam2csr e o amgx4foam rodarem com OpenFOAM-14 e CUDA 13 |
-| `scripts/env.sh` | variáveis de ambiente (source antes de compilar ou rodar) |
-| `scripts/build_all.sh` | clona as três dependências nos commits testados, aplica os patches e compila |
-| `config/amgxpOptions` | configuração da AMGX recomendada (FGMRES + AMG clássico PMIS) |
-| `scripts/tune_amgx.py` | compara receitas da AMGX num caso seu e mostra a mais rápida |
-| `scripts/render_*.py` | figuras do README no ParaView (motorBike, pluma, HVAC) |
-| `benchmarks/` | resultados medidos: [cavity3D](benchmarks/cavity3D.md) (PISO, 1 e 3,4 M células) e [motorBike](benchmarks/motorBike.md) (SIMPLE, 3,2 M) |
-| [`../tutorials/GPU/`](../tutorials/GPU/) | casos prontos em que a GPU ganha da CPU (`./Allrun gpu`) |
-| `docs/` | tutorial passo a passo e relatório técnico em HTML (baixe e abra no navegador) |
+| `patches/` | fixes so foam2csr and amgx4foam build and run with OpenFOAM-14 and CUDA 13 |
+| `scripts/env.sh` | environment variables (source it before building or running) |
+| `scripts/build_all.sh` | clones the three dependencies at the tested commits, applies the patches and builds |
+| `config/amgxpOptions` | recommended AMGX configuration (FGMRES + classical AMG, PMIS) |
+| `scripts/tune_amgx.py` | compares AMGX recipes on your own case and reports the fastest |
+| `scripts/render_*.py`, `scripts/plot_scaling.py` | the README figures (ParaView) and the scaling chart |
+| `benchmarks/` | measured results: [cavity3D](benchmarks/cavity3D.md) (PISO, 0.5 to 3.4 M cells) and [motorBike](benchmarks/motorBike.md) (SIMPLE, 3.2 M) |
+| [`../tutorials/GPU/`](../tutorials/GPU/) | ready-to-run cases where the GPU beats the CPU (`./Allrun gpu`) |
+| `docs/` | step-by-step tutorial and technical report in HTML (download and open in a browser) |
 
-## Início rápido
+## Quick start
 
-Requisitos: GPU NVIDIA com compute capability ≥ 7.0, WSL2 ou Linux com Ubuntu 22.04,
-CUDA Toolkit em `/usr/local/cuda` (testado com 13.2), OpenFOAM-14 já compilado nesta árvore e
-os pacotes `libpetsc-real-dev`, `libtrilinos-zoltan-dev`, `libscotch-dev`, `libptscotch-dev`.
+Requirements: NVIDIA GPU with compute capability ≥ 7.0, WSL2 or Linux with Ubuntu 22.04,
+CUDA Toolkit in `/usr/local/cuda` (tested with 13.2), OpenFOAM-14 already built in this tree and
+the packages `libpetsc-real-dev`, `libtrilinos-zoltan-dev`, `libscotch-dev`, `libptscotch-dev`.
 
 ```bash
 cd ~/dev/OpenFOAM-14
-nvidia-smi --query-gpu=compute_cap --format=csv   # ex.: 8.9
+nvidia-smi --query-gpu=compute_cap --format=csv   # e.g. 8.9
 bash cuda/scripts/build_all.sh 89                 # 8.9 -> 89
 ```
 
-Num caso, três arquivos:
+In a case, three files:
 
 ```
 system/controlDict   libs ("libamgxFoam.so");
 system/fvSolution    p { solver amgx; amgx { dict p; } }
-system/amgxpOptions  copie de cuda/config/amgxpOptions
+system/amgxpOptions  copy from cuda/config/amgxpOptions
 ```
 
-Rode sempre decomposto e em paralelo (a AMGX exige MPI inicializado):
+Always run decomposed and in parallel (AMGX needs MPI to be initialized):
 
 ```bash
 source cuda/scripts/env.sh
-decomposePar && mpirun -np 4 foamRun -parallel     # procure linhas "AMGx:  Solving for p"
+decomposePar && mpirun -np 4 foamRun -parallel     # look for "AMGx:  Solving for p" lines
 ```
 
-## Antes de concluir que a GPU não vale a pena
+## Before concluding that the GPU is not worth it
 
-1. **O `tolerance`/`relTol` do `fvSolution` é ignorado.** O critério que vale é o `"tolerance"` do `amgxpOptions` (`RELATIVE_INI`). Iguale ao `relTol` do caso, ou a GPU fará muito mais trabalho que a CPU.
-2. **Não use `caching { update periodic | adaptive | never; }`.** Nesses modos o amgx4foam deixa de atualizar a matriz, e o resultado fica fisicamente errado mesmo convergindo. Para economizar setup use `"structure_reuse_levels": -1`, que já está em `config/amgxpOptions`.
-3. **Malha pequena favorece a CPU.** Use a cavity só para validar o resultado, não para medir velocidade.
-   Na [cavity3D](benchmarks/cavity3D.md) o ganho vai de 1,03× com 0,5 M células a 2,09× com 3,4 M.
-4. **2 a 4 processos por GPU.** Cada processo abre um contexto CUDA na mesma placa.
-5. **Libere a GPU.** ParaView, jogos e o próprio desktop disputam a memória da placa; falta de memória aparece como `Cuda failure: 'unknown error'` / `Out of resource`.
-6. **Em regime permanente (SIMPLE) a pressão costuma ser só ~10% da iteração.** O ganho aparece em casos transientes em que a pressão domina. Veja `benchmarks/motorBike.md`.
-7. **A receita da AMGX importa.** Na cavity3D, a antiga `PCG_AGGREGATION_JACOBI` faz 4× mais iterações que a `FGMRES_CLASSICAL_AGGRESSIVE_PMIS` e deixa a GPU mais lenta que a CPU. Compare no seu caso com `scripts/tune_amgx.py`.
+1. **The `tolerance`/`relTol` in `fvSolution` is ignored.** What counts is `"tolerance"` in `amgxpOptions` (`RELATIVE_INI`). Set it to the case's `relTol`, or the GPU will do much more work than the CPU.
+2. **Do not use `caching { update periodic | adaptive | never; }`.** In these modes amgx4foam stops updating the matrix, and the result is physically wrong even though it converges. To save setup time use `"structure_reuse_levels": -1`, which is already in `config/amgxpOptions`.
+3. **Small meshes favor the CPU.** Use the cavity only to validate the result, not to measure speed.
+   On the [cavity3D](benchmarks/cavity3D.md) the speed-up goes from 1.03× at 0.5 M cells to 2.09× at 3.4 M.
+4. **2 to 4 ranks per GPU.** Each rank opens a CUDA context on the same card, and also takes host RAM.
+5. **Free the GPU.** ParaView, games and the desktop itself compete for the card's memory; running out shows up as `Cuda failure: 'unknown error'` / `Out of resource`.
+6. **In steady state (SIMPLE) the pressure is often only ~10% of the iteration.** The gain shows up in transient cases where the pressure dominates. See `benchmarks/motorBike.md`.
+7. **The AMGX recipe matters.** On the cavity3D, the old `PCG_AGGREGATION_JACOBI` takes 4× more iterations than `FGMRES_CLASSICAL_AGGRESSIVE_PMIS` and makes the GPU slower than the CPU. Compare on your own case with `scripts/tune_amgx.py`.
 
 ---
-Fork comunitário, não oficial. OpenFOAM® é marca registrada da OpenFOAM Foundation.
-AMGX (BSD-3), foam2csr e amgx4foam pertencem aos seus autores; este repositório
-distribui apenas patches sobre eles.
+Community fork, not official. OpenFOAM® is a registered trademark of the OpenFOAM Foundation.
+AMGX (BSD-3), foam2csr and amgx4foam belong to their authors; this repository
+only distributes patches on top of them.

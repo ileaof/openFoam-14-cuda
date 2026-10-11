@@ -1,24 +1,24 @@
 #!/bin/bash
-# Ambiente para compilar e rodar o solver de pressão "amgx" (GPU) no OpenFOAM-14.
-# Uso:  source cuda/scripts/env.sh        (a partir da raiz do OpenFOAM-14)
+# Environment to build and run the "amgx" (GPU) pressure solver in OpenFOAM-14.
+# Usage:  source cuda/scripts/env.sh      (from the OpenFOAM-14 root)
 #
-# CUDA_DEPS_DIR: onde ficam AMGX, foam2csr e amgx4foam (padrão: ~/dev)
+# CUDA_DEPS_DIR: where AMGX, foam2csr and amgx4foam live (default: ~/dev)
 
 _cuda_here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _foam_root="$(cd "$_cuda_here/.." && pwd)"
 export CUDA_DEPS_DIR="${CUDA_DEPS_DIR:-$HOME/dev}"
 
-# OpenFOAM-14 (GCC). Para Intel: source "$_foam_root/etc/bashrc" WM_COMPILER=Icx
+# OpenFOAM-14 (GCC). For Intel: source "$_foam_root/etc/bashrc" WM_COMPILER=Icx
 source "$_foam_root/etc/bashrc"
 
-# CUDA na frente do PATH (evita o nvcc antigo do pacote nvidia-cuda-toolkit do Ubuntu)
+# CUDA first in the PATH (avoids the old nvcc from Ubuntu's nvidia-cuda-toolkit package)
 export PATH=/usr/local/cuda/bin:$PATH
 
 # AMGX
 export AMGX_INC=$CUDA_DEPS_DIR/AMGX/include
 export AMGX_LIB=$CUDA_DEPS_DIR/AMGX/build
 
-# foam2csr precisa do CUB. No CUDA 13 ele fica em include/cccl/; em versões anteriores, em include/
+# foam2csr needs CUB. In CUDA 13 it lives in include/cccl/; in older versions, in include/
 if [ -d /usr/local/cuda/targets/x86_64-linux/include/cccl/cub ]; then
   export CUBROOT=/usr/local/cuda/targets/x86_64-linux/include/cccl
 else
@@ -27,11 +27,11 @@ fi
 export FOAM2CSR_INC=$CUDA_DEPS_DIR/foam2csr/src
 export FOAM2CSR_LIB=$FOAM_USER_LIBBIN
 
-# PETSc do Ubuntu 22.04 (libpetsc-real-dev). Ajuste se a sua distro instalar em outro lugar.
+# Ubuntu 22.04's PETSc (libpetsc-real-dev). Adjust if your distro installs it elsewhere.
 export PETSC_INC=/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/include
 export PETSC_LIB_DIR=$CUDA_DEPS_DIR/compat/lib
 
-# Zoltan do Trilinos (decomposição opcional do OpenFOAM)
+# Trilinos' Zoltan (optional OpenFOAM decomposition)
 export ZOLTAN_INCLUDE_DIR=/usr/include/trilinos
 export ZOLTAN_LIB_DIR=$CUDA_DEPS_DIR/compat/lib
 

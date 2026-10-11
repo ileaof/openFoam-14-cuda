@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Testa receitas da AMGX num caso decomposto e mostra qual é mais rápida.
+"""Tries AMGX recipes on a decomposed case and reports which one is fastest.
 
-Cada receita é uma configuração que vem com a AMGX (~/dev/AMGX/src/configs).
-O script acrescenta o que o OpenFOAM precisa (critério relativo, histórico de
-resíduo, reaproveitamento da estrutura do AMG), roda o caso por inteiro com
-cada receita e compara o tempo por passo depois do aquecimento.
+Each recipe is a configuration that ships with AMGX (~/dev/AMGX/src/configs).
+The script adds what OpenFOAM needs (relative criterion, residual history,
+AMG structure reuse), runs the whole case with each recipe and compares the
+time per step after the warm-up.
 
-Uso (com cuda/scripts/env.sh carregado, caso já decomposto, endTime curto):
+Usage (with cuda/scripts/env.sh sourced, case already decomposed, short endTime):
   python3 cuda/scripts/tune_amgx.py --case ~/runs/meuCaso --solver icoFoam \
       --np 4 --dict p=0.05 --dict pFinal=0.001
 
-  --dict nome=tol   um por dicionário "amgx { dict nome; }" do fvSolution;
-                    tol é a tolerância RELATIVA (use o relTol do caso).
-  --recipes ...     receitas a testar (padrão: as que funcionaram bem na pressão)
+  --dict name=tol   one per "amgx { dict name; }" dictionary in fvSolution;
+                    tol is the RELATIVE tolerance (use the case's relTol).
+  --recipes ...     recipes to try (default: the ones that worked well for pressure)
 """
 import argparse, json, os, subprocess, sys
 
@@ -64,7 +64,7 @@ def main():
     ap.add_argument("--case", required=True)
     ap.add_argument("--solver", required=True)
     ap.add_argument("--np", type=int, default=4)
-    ap.add_argument("--dict", action="append", required=True, metavar="NOME=TOL")
+    ap.add_argument("--dict", action="append", required=True, metavar="NAME=TOL")
     ap.add_argument("--recipes", nargs="+", default=DEFAULT_RECIPES)
     ap.add_argument("--warmup", type=int, default=5)
     ap.add_argument("--amgx-configs", default=os.path.expanduser(
@@ -73,7 +73,7 @@ def main():
     case = os.path.expanduser(a.case)
     dicts = [(n, float(t)) for n, t in (d.split("=") for d in a.dict)]
 
-    print(f"{'receita':36s} {'s/passo':>8s} {'AMGX s':>7s}  iteracoes   Courant final")
+    print(f"{'recipe':36s} {'s/step':>8s} {'AMGX s':>7s}  iterations  final Courant")
     for name in a.recipes:
         for dname, tol in dicts:
             out = os.path.join(case, "system", f"amgx{dname}Options")
@@ -83,10 +83,10 @@ def main():
                             shell=True).returncode
         r = parse(log, a.warmup) if rc == 0 else None
         if r is None:
-            print(f"{name:36s} FALHOU (ver {log})", flush=True)
+            print(f"{name:36s} FAILED (see {log})", flush=True)
         else:
             print(f"{name:36s} {r[0]:8.3f} {r[1]:7.3f}  {r[2]:10s} {r[3]}", flush=True)
-    print("As receitas devem chegar ao mesmo Courant final; se uma divergir, descarte-a.")
+    print("All recipes should reach the same final Courant number; discard any that differs.")
 
 
 if __name__ == "__main__":

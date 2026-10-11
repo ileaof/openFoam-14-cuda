@@ -1,36 +1,36 @@
-# OpenFOAM-14 em Apple Silicon (planejado)
+# OpenFOAM-14 on Apple Silicon (planned)
 
-> **Estado: plano, ainda não testado em Apple Silicon.** Os passos abaixo são o caminho
-> previsto; serão validados e corrigidos quando a máquina de teste (M5, 64 GB) chegar.
+> **Status: plan, not yet tested on Apple Silicon.** The steps below are the intended path;
+> they will be validated and corrected when the test machine (M5, 64 GB) arrives.
 
-## O que muda em relação ao Linux/WSL com NVIDIA
+## What changes compared with Linux/WSL with NVIDIA
 
-| Parte | Apple Silicon |
+| Part | Apple Silicon |
 |---|---|
-| OpenFOAM-14 na CPU | roda, compilado numa VM Linux ARM (aarch64) |
-| Pressão na GPU (AMGX, pasta [`cuda/`](../cuda/)) | **não roda**: exige CUDA, que só existe em placas NVIDIA |
-| Tutoriais de [`tutorials/GPU`](../tutorials/GPU/) | são pulados automaticamente (sem `libamgxFoam.so`) |
-| ParaView | versão nativa para macOS |
+| OpenFOAM-14 on the CPU | runs, built in an ARM Linux VM (aarch64) |
+| Pressure on the GPU (AMGX, [`cuda/`](../cuda/) folder) | **does not run**: it needs CUDA, which only exists on NVIDIA cards |
+| [`tutorials/GPU`](../tutorials/GPU/) tutorials | skipped automatically (no `libamgxFoam.so`) |
+| ParaView | native macOS build |
 
-## Caminho previsto
+## Intended path
 
-1. **VM Linux ARM.** Ubuntu 22.04 arm64 numa VM leve (OrbStack, Lima ou UTM). Imagens
-   x86 via Docker também funcionam, mas emuladas pelo Rosetta, bem mais lentas.
-2. **Dependências na VM**, as mesmas do Ubuntu x86:
+1. **ARM Linux VM.** Ubuntu 22.04 arm64 in a light VM (OrbStack, Lima or UTM). x86 images
+   through Docker also work, but emulated by Rosetta, much slower.
+2. **Dependencies in the VM**, the same as on x86 Ubuntu:
    ```bash
    sudo apt install build-essential flex bison cmake zlib1g-dev libboost-system-dev \
        libboost-thread-dev libopenmpi-dev openmpi-bin libscotch-dev libptscotch-dev
    ```
-3. **Compilar o fork** como em Linux (seções 2 e 3 do [README principal](../README.md)),
-   sem a etapa da GPU.
-4. **Validar** com cavity, motorBike e smallPoolFire3D, comparando com os resultados x86.
+3. **Build the fork** as on Linux (sections 2 and 3 of the [main README](../README.md)),
+   without the GPU step.
+4. **Validate** with cavity, motorBike and smallPoolFire3D, comparing with the x86 results.
 
-## A fazer quando a máquina chegar
+## To do when the machine arrives
 
-- [ ] Confirmar se há pacotes prontos do OpenFOAM para arm64 ou se compilar é o caminho
-- [ ] Compilar o fork em aarch64 e rodar a bateria de tutoriais
-- [ ] `apple/scripts/setup_vm.sh`: criar a VM e instalar dependências (só depois de testado)
-- [ ] Benchmark de CPU: cavity3D, motorBike, smallPoolFire3D com 4, 8 e todos os
-      núcleos de performance, comparado com o notebook (CPU e RTX 4050)
-- [ ] Levantar se existe caminho viável para o solver de pressão na GPU da Apple (Metal);
-      hoje não há equivalente maduro à AMGX
+- [ ] Check whether there are ready-made OpenFOAM packages for arm64 or building is the way
+- [ ] Build the fork on aarch64 and run the tutorial loop
+- [ ] `apple/scripts/setup_vm.sh`: create the VM and install dependencies (only once tested)
+- [ ] CPU benchmark: cavity3D, motorBike, smallPoolFire3D with 4, 8 and all performance
+      cores, compared with the laptop (CPU and RTX 4050)
+- [ ] Find out whether there is a viable path for the pressure solver on Apple's GPU (Metal);
+      today there is no mature equivalent to AMGX
