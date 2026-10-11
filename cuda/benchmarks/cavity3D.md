@@ -7,7 +7,23 @@ de aquecimento (30 passos na malha de 1 M, 20 na de 3,4 M).
 
 **Ambiente:** RTX 4050 Laptop (6 GB) · WSL2 Ubuntu 22.04 · CUDA 13.2 · GCC 11.4 · OpenMPI 4.1.
 
-## CPU × GPU
+## Curva de escala (11/10/2026)
+
+| Malha | CPU (GAMG) | GPU (AMGX) | Ganho | Iterações de p, CPU / GPU |
+|---|---:|---:|---:|---:|
+| 80³ = 0,5 M células | 0,208 s/passo | 0,201 s/passo | 1,03× | 3,9 / 5,3 |
+| 100³ = 1,0 M | 0,583 | 0,411 | **1,42×** | 7,8 / 5,7 |
+| 125³ = 2,0 M | 1,454 | 0,852 | **1,71×** | 8,7 / 5,7 |
+| 150³ = 3,4 M | 3,577 | 1,577 | **2,27×** | 15,6 / 5,6 |
+
+0,5, 1 e 2 M medidos em 11/10/2026 (25 passos, média após 5 de aquecimento); 3,4 M medido
+em 10/10/2026 com o mesmo caso, a mesma receita e o mesmo critério. Na repetição de 3,4 M
+em 11/10 a CPU deu 3,349 s/passo, mas a GPU não completou: o Linux matou os processos por
+falta de RAM (8 GB no WSL) ao criar a segunda instância da AMGX (`pFinal`). Pela mesma
+razão a malha de 4,9 M não foi medida. Dados em [`cavity3D_scaling.csv`](cavity3D_scaling.csv);
+gráfico gerado com [`../scripts/plot_scaling.py`](../scripts/plot_scaling.py).
+
+## CPU × GPU (10/10/2026)
 
 | Malha | CPU, GAMG | GPU, AMGX (`FGMRES_CLASSICAL_AGGRESSIVE_PMIS`) | Ganho |
 |---|---|---|---:|

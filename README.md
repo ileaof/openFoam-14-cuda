@@ -8,11 +8,32 @@
 <p align="center">
   <img alt="OpenFOAM" src="https://img.shields.io/badge/OpenFOAM-14_(Foundation)-1f6feb">
   <img alt="CUDA" src="https://img.shields.io/badge/CUDA-13.2_(testado)-76b900">
-  <img alt="AMGX" src="https://img.shields.io/badge/solver-AMGX_PCG%2BAMG-76b900">
+  <img alt="AMGX" src="https://img.shields.io/badge/solver-AMGX_FGMRES%2BAMG-76b900">
   <img alt="Compiladores" src="https://img.shields.io/badge/compiladores-GCC_11_%7C_Intel_oneAPI_2026-8250df">
   <img alt="SO" src="https://img.shields.io/badge/Ubuntu_22.04-nativo_%7C_WSL2-e95420">
   <img alt="Licença" src="https://img.shields.io/badge/licen%C3%A7a-GPL--3.0-lightgrey">
 </p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="cuda/docs/gpu_scaling_dark.png">
+    <img src="cuda/docs/gpu_scaling_light.png" width="100%" alt="Tempo por passo da CPU e da GPU e ganho da GPU, de 1,03 vezes com 0,5 milhão de células a 2,27 vezes com 3,4 milhões">
+  </picture>
+</p>
+
+**Quanto maior a malha, mais a GPU ganha.** cavity3D transiente (`icoFoam`, PISO), 4 processos MPI,
+RTX 4050 Laptop contra a CPU do mesmo notebook
+([caso](tutorials/GPU/cavity3D/), [detalhes](cuda/benchmarks/cavity3D.md)):
+
+| Malha | CPU (GAMG) | GPU (AMGX) | Ganho | Iterações de p, CPU / GPU |
+|---|---:|---:|---:|---:|
+| 80³ = 0,5 M células | 0,208 s/passo | 0,201 s/passo | 1,03× | 3,9 / 5,3 |
+| 100³ = 1,0 M | 0,583 | 0,411 | **1,42×** | 7,8 / 5,7 |
+| 125³ = 2,0 M | 1,454 | 0,852 | **1,71×** | 8,7 / 5,7 |
+| 150³ = 3,4 M | 3,577 | 1,577 | **2,27×** | 15,6 / 5,6 |
+
+As iterações do GAMG crescem com a malha; as da AMGX ficam em ~5,5. A malha de 4,9 M não coube
+nos 8 GB de RAM do WSL desta máquina, que é o limite do teste, não da GPU.
 
 <p align="center">
   <img src="cuda/docs/motorbike_streamlines.png" width="49%" alt="Moto e piloto coloridos pela pressão, com tubos de corrente coloridos pela velocidade">
@@ -71,7 +92,7 @@ que já vêm no Foundation.
 | OpenFOAM-14 com GCC 11.4 | ✅ ~145 solvers e utilitários |
 | OpenFOAM-14 com Intel oneAPI 2026.1 | ✅ pressão final **idêntica bit a bit** ao build GCC (cavity) |
 | Solver `amgx` na GPU | ✅ cavity e motorBike convergem e batem com a CPU |
-| Desempenho, cavity3D transiente (PISO) | ✅ GPU **1,38×** mais rápida com 1 M células e **2,27×** com 3,4 M ([detalhes](cuda/benchmarks/cavity3D.md)) |
+| Desempenho, cavity3D transiente (PISO) | ✅ GPU de **1,03×** (0,5 M células) a **2,27×** (3,4 M) mais rápida, ganho crescente com a malha ([detalhes](cuda/benchmarks/cavity3D.md)) |
 | Desempenho, motorBike 3,2 M células | ⚖️ GPU **empata** com a CPU (2,48 × 2,55 s/iteração) em regime permanente |
 
 **motorBike, 3.215.800 células, 4 processos MPI, média das iterações 10–100:**
