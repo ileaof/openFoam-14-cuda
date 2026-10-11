@@ -1,0 +1,4 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+rm -rf processor* [1-9]* 0.[0-9]* constant/polyMesh log.* cavity3D.foam \
+       system/blockMeshDict system/controlDict system/fvSolution

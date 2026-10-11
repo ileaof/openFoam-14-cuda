@@ -1,0 +1,25 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Tutoriais com a pressão resolvida na GPU (AMGX, via libamgxFoam.so).
+# Sem a biblioteca (veja cuda/README.md) eles são pulados, para não
+# interromper a bateria de tutoriais do OpenFOAM em máquinas sem GPU.
+
+found=
+for d in "$FOAM_USER_LIBBIN" "$FOAM_SITE_LIBBIN" "$FOAM_LIBBIN"
+do
+    [ -n "$d" ] && [ -f "$d/libamgxFoam.so" ] && found=yes
+done
+
+if [ -z "$found" ]
+then
+    echo "libamgxFoam.so não encontrada: tutoriais de GPU pulados"
+    exit 0
+fi
+
+for case in */
+do
+    [ -x "$case/Allrun" ] && ( cd "$case" && ./Allrun gpu )
+done
+
+#------------------------------------------------------------------------------

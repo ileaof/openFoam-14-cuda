@@ -1,0 +1,34 @@
+#!/bin/sh
+# Cavity 3D com tampa móvel (Re = 1000), icoFoam, decomposta em 4 partes.
+#
+#   ./Allrun gpu         # pressão na GPU (AMGX), malha 100^3 = 1 M células
+#   ./Allrun cpu         # mesma coisa com GAMG na CPU, para comparar
+#   N=150 ./Allrun gpu   # malha 150^3 = 3,4 M células
+#   END=0.01 ./Allrun gpu  # só alguns passos (benchmark)
+#
+# Requer: source <OpenFOAM-14>/cuda/scripts/env.sh  (modo gpu)
+cd "${0%/*}" || exit 1
+
+MODE=${1:-gpu}
+N=${N:-100}
+END=${END:-1}
+NP=4
+DT=$(awk -v n="$N" 'BEGIN{printf "%.6g", 0.05/n}')   # Courant ~0,5 (U=1, dx=0,1/N)
+
+case "$MODE" in cpu|gpu) ;; *) echo "uso: ./Allrun cpu|gpu"; exit 1;; esac
+
+sed "s/NCELLS/$N/g" system/blockMeshDict.template > system/blockMeshDict
+sed -e "s/DELTAT/$DT/" -e "s/ENDTIME/$END/" system/controlDict.template > system/controlDict
+cp "system/fvSolution.$MODE" system/fvSolution
+if [ "$MODE" = gpu ]; then
+    sed -i '/^runTimeModifiable/i libs            ("libamgxFoam.so");\n' system/controlDict
+fi
+
+blockMesh > log.blockMesh 2>&1 || { echo "blockMesh falhou"; exit 1; }
+decomposePar -force > log.decomposePar 2>&1 || { echo "decomposePar falhou"; exit 1; }
+echo "malha: $(grep -m1 nCells log.blockMesh | awk '{print $2}') células, dt = $DT, até t = $END ($MODE)"
+mpirun -np $NP icoFoam -parallel > log.icoFoam 2>&1
+grep -m1 -E "(AMGx|GAMG):  Solving for p" log.icoFoam
+tail -n 4 log.icoFoam
+reconstructPar > log.reconstructPar 2>&1
+touch cavity3D.foam

@@ -71,6 +71,7 @@ que já vêm no Foundation.
 | OpenFOAM-14 com GCC 11.4 | ✅ ~145 solvers e utilitários |
 | OpenFOAM-14 com Intel oneAPI 2026.1 | ✅ pressão final **idêntica bit a bit** ao build GCC (cavity) |
 | Solver `amgx` na GPU | ✅ cavity e motorBike convergem e batem com a CPU |
+| Desempenho, cavity3D transiente (PISO) | ✅ GPU **1,38×** mais rápida com 1 M células e **2,27×** com 3,4 M ([detalhes](cuda/benchmarks/cavity3D.md)) |
 | Desempenho, motorBike 3,2 M células | ⚖️ GPU **empata** com a CPU (2,48 × 2,55 s/iteração) em regime permanente |
 
 **motorBike, 3.215.800 células, 4 processos MPI, média das iterações 10–100:**
@@ -265,6 +266,11 @@ ajuste `"tolerance"` para o mesmo valor do `relTol` que você usaria na CPU.
 
 > ⚠️ O `tolerance`/`relTol` do `fvSolution` **é ignorado** pela GPU. Quem decide quando parar é o `amgxpOptions`.
 
+A receita da AMGX também conta: a padrão (FGMRES + AMG clássico PMIS) foi a mais rápida entre nove
+testadas na cavity3D. Para comparar receitas no seu caso, use
+[`cuda/scripts/tune_amgx.py`](cuda/scripts/tune_amgx.py). Um exemplo completo e pronto está em
+[`tutorials/GPU/cavity3D`](tutorials/GPU/cavity3D/).
+
 Rode **sempre decomposto e em paralelo**, com 2 a 4 processos por GPU:
 
 ```bash
@@ -296,7 +302,10 @@ de cada iteração de **2,48 s**, cerca de **10%**. O resto (velocidade, turbul�
 montagem das matrizes, pós-processamento) continua na CPU. Pela lei de Amdahl, mesmo
 um solve de pressão instantâneo daria no máximo uns 12% de ganho.
 
-A GPU deve compensar quando **a pressão domina a iteração**:
+A GPU compensa quando **a pressão domina a iteração**. Na cavity3D (PISO transiente,
+`pFinal` com `relTol 0.001`), a GPU é **1,38×** mais rápida com 1 M células e **2,27×**
+com 3,4 M: as iterações do GAMG crescem com a malha (7,4 → 15,6), as da AMGX ficam em ~5,5.
+Os sinais de um caso favorável:
 
 - escoamentos **transientes** (PISO/PIMPLE) com vários correctores de pressão;
 - `pFinal` com `relTol 0`, que força solves profundos;
@@ -354,10 +363,11 @@ OpenFOAM-14/                árvore original do OpenFOAM Foundation (sem altera�
 ├── cuda/
 │   ├── README.md           detalhes da integração e armadilhas
 │   ├── patches/            foam2csr.patch, amgx4foam.patch
-│   ├── scripts/            env.sh (ambiente), build_all.sh (clona, aplica patches, compila)
-│   ├── config/             amgxpOptions recomendado
-│   ├── benchmarks/         motorBike.md
+│   ├── scripts/            env.sh, build_all.sh, tune_amgx.py (receitas), render_motorbike.py
+│   ├── config/             amgxpOptions recomendado (PMIS)
+│   ├── benchmarks/         cavity3D.md, motorBike.md
 │   └── docs/               tutorial.html, report.html, imagens
+├── tutorials/GPU/          casos prontos com a pressão na GPU (cavity3D)
 ├── README.md               este arquivo
 └── README.org              README original do OpenFOAM
 ```
@@ -369,7 +379,8 @@ OpenFOAM-14/                árvore original do OpenFOAM Foundation (sem altera�
 - [x] Build com Intel oneAPI
 - [x] Solver de pressão na GPU (AMGX), validado contra a CPU
 - [x] Benchmark CPU × GPU em regime permanente (motorBike, 3,2 M células)
-- [ ] Benchmark em caso transiente (PIMPLE), onde a pressão domina a iteração
+- [x] Benchmark em caso transiente (cavity3D, PISO): GPU 1,38× (1 M) e 2,27× (3,4 M)
+- [x] Tutoriais prontos em `tutorials/GPU/`
 - [ ] Aplicar ao caso de combustão do WiebePy (OpenFOAM 13)
 
 ## Créditos e licença

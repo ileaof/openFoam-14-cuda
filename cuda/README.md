@@ -14,8 +14,11 @@ OpenFOAM-14  →  amgx4foam (libamgxFoam.so)  →  foam2csr (libfoam2csr.so)  �
 | `patches/` | correções para o foam2csr e o amgx4foam rodarem com OpenFOAM-14 e CUDA 13 |
 | `scripts/env.sh` | variáveis de ambiente (source antes de compilar ou rodar) |
 | `scripts/build_all.sh` | clona as três dependências nos commits testados, aplica os patches e compila |
-| `config/amgxpOptions` | configuração da AMGX recomendada (PCG + AMG por agregação) |
-| `benchmarks/` | resultados medidos (motorBike, 3,2 M células) |
+| `config/amgxpOptions` | configuração da AMGX recomendada (FGMRES + AMG clássico PMIS) |
+| `scripts/tune_amgx.py` | compara receitas da AMGX num caso seu e mostra a mais rápida |
+| `scripts/render_motorbike.py` | gera as figuras do motorBike no ParaView |
+| `benchmarks/` | resultados medidos: [cavity3D](benchmarks/cavity3D.md) (PISO, 1 e 3,4 M células) e [motorBike](benchmarks/motorBike.md) (SIMPLE, 3,2 M) |
+| [`../tutorials/GPU/`](../tutorials/GPU/) | casos prontos em que a GPU ganha da CPU (`./Allrun gpu`) |
 | `docs/` | tutorial passo a passo e relatório técnico em HTML (baixe e abra no navegador) |
 
 ## Início rápido
@@ -50,9 +53,11 @@ decomposePar && mpirun -np 4 foamRun -parallel     # procure linhas "AMGx:  Solv
 1. **O `tolerance`/`relTol` do `fvSolution` é ignorado.** O critério que vale é o `"tolerance"` do `amgxpOptions` (`RELATIVE_INI`). Iguale ao `relTol` do caso, ou a GPU fará muito mais trabalho que a CPU.
 2. **Não use `caching { update periodic | adaptive | never; }`.** Nesses modos o amgx4foam deixa de atualizar a matriz, e o resultado fica fisicamente errado mesmo convergindo. Para economizar setup use `"structure_reuse_levels": -1`, que já está em `config/amgxpOptions`.
 3. **Malha pequena favorece a CPU.** Use a cavity só para validar o resultado, não para medir velocidade.
+   Na [cavity3D](benchmarks/cavity3D.md) o ganho vai de 1,38× com 1 M células a 2,27× com 3,4 M.
 4. **2 a 4 processos por GPU.** Cada processo abre um contexto CUDA na mesma placa.
 5. **Libere a GPU.** ParaView, jogos e o próprio desktop disputam a memória da placa; falta de memória aparece como `Cuda failure: 'unknown error'` / `Out of resource`.
 6. **Em regime permanente (SIMPLE) a pressão costuma ser só ~10% da iteração.** O ganho aparece em casos transientes em que a pressão domina. Veja `benchmarks/motorBike.md`.
+7. **A receita da AMGX importa.** Na cavity3D, a antiga `PCG_AGGREGATION_JACOBI` faz 4× mais iterações que a `FGMRES_CLASSICAL_AGGRESSIVE_PMIS` e deixa a GPU mais lenta que a CPU. Compare no seu caso com `scripts/tune_amgx.py`.
 
 ---
 Fork comunitário, não oficial. OpenFOAM® é marca registrada da OpenFOAM Foundation.
