@@ -17,7 +17,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="cuda/docs/gpu_scaling_dark.png">
-    <img src="cuda/docs/gpu_scaling_light.png" width="100%" alt="Tempo por passo da CPU e da GPU e ganho da GPU, de 1,03 vezes com 0,5 milhão de células a 2,27 vezes com 3,4 milhões">
+    <img src="cuda/docs/gpu_scaling_light.png" width="100%" alt="Tempo por passo da CPU e da GPU e ganho da GPU, de 1,03 vezes com 0,5 milhão de células a 2,09 vezes com 3,4 milhões">
   </picture>
 </p>
 
@@ -27,13 +27,15 @@ RTX 4050 Laptop contra a CPU do mesmo notebook
 
 | Malha | CPU (GAMG) | GPU (AMGX) | Ganho | Iterações de p, CPU / GPU |
 |---|---:|---:|---:|---:|
-| 80³ = 0,5 M células | 0,208 s/passo | 0,201 s/passo | 1,03× | 3,9 / 5,3 |
-| 100³ = 1,0 M | 0,583 | 0,411 | **1,42×** | 7,8 / 5,7 |
-| 125³ = 2,0 M | 1,454 | 0,852 | **1,71×** | 8,7 / 5,7 |
-| 150³ = 3,4 M | 3,577 | 1,577 | **2,27×** | 15,6 / 5,6 |
+| 80³ = 0,5 M células | 0,204 s/passo | 0,197 s/passo | 1,03× | 3,9 / 5,3 |
+| 100³ = 1,0 M | 0,570 | 0,403 | **1,42×** | 7,8 / 5,7 |
+| 125³ = 2,0 M | 1,283 | 0,834 | **1,54×** | 8,7 / 5,7 |
+| 140³ = 2,7 M | 1,932 | 1,192 | **1,62×** | 9,8 / 5,5 |
+| 150³ = 3,4 M | 3,110 | 1,485 | **2,09×** | 14,6 / 5,6 |
 
-As iterações do GAMG crescem com a malha; as da AMGX ficam em ~5,5. A malha de 4,9 M não coube
-nos 8 GB de RAM do WSL desta máquina, que é o limite do teste, não da GPU.
+As iterações do GAMG crescem com a malha; as da AMGX ficam em ~5,5. Medido em 11/10/2026, com a
+máquina livre (outros programas fechados). A malha de 4,9 M não coube nos 8 GB de RAM do WSL desta
+máquina, que é o limite do teste, não da GPU.
 
 <p align="center">
   <img src="cuda/docs/motorbike_streamlines.png" width="49%" alt="Moto e piloto coloridos pela pressão, com tubos de corrente coloridos pela velocidade">
@@ -92,7 +94,7 @@ que já vêm no Foundation.
 | OpenFOAM-14 com GCC 11.4 | ✅ ~145 solvers e utilitários |
 | OpenFOAM-14 com Intel oneAPI 2026.1 | ✅ pressão final **idêntica bit a bit** ao build GCC (cavity) |
 | Solver `amgx` na GPU | ✅ cavity e motorBike convergem e batem com a CPU |
-| Desempenho, cavity3D transiente (PISO) | ✅ GPU de **1,03×** (0,5 M células) a **2,27×** (3,4 M) mais rápida, ganho crescente com a malha ([detalhes](cuda/benchmarks/cavity3D.md)) |
+| Desempenho, cavity3D transiente (PISO) | ✅ GPU de **1,03×** (0,5 M células) a **2,09×** (3,4 M) mais rápida, ganho crescente com a malha ([detalhes](cuda/benchmarks/cavity3D.md)) |
 | Desempenho, motorBike 3,2 M células | ⚖️ GPU **empata** com a CPU (2,48 × 2,55 s/iteração) em regime permanente |
 
 **motorBike, 3.215.800 células, 4 processos MPI, média das iterações 10–100:**
@@ -371,8 +373,8 @@ montagem das matrizes, pós-processamento) continua na CPU. Pela lei de Amdahl, 
 um solve de pressão instantâneo daria no máximo uns 12% de ganho.
 
 A GPU compensa quando **a pressão domina a iteração**. Na cavity3D (PISO transiente,
-`pFinal` com `relTol 0.001`), a GPU é **1,38×** mais rápida com 1 M células e **2,27×**
-com 3,4 M: as iterações do GAMG crescem com a malha (7,4 → 15,6), as da AMGX ficam em ~5,5.
+`pFinal` com `relTol 0.001`), a GPU é **1,42×** mais rápida com 1 M células e **2,09×**
+com 3,4 M: as iterações do GAMG crescem com a malha (3,9 → 14,6), as da AMGX ficam em ~5,5.
 Os sinais de um caso favorável:
 
 - escoamentos **transientes** (PISO/PIMPLE) com vários correctores de pressão;
@@ -448,7 +450,7 @@ OpenFOAM-14/                árvore original do OpenFOAM Foundation (sem altera�
 - [x] Build com Intel oneAPI
 - [x] Solver de pressão na GPU (AMGX), validado contra a CPU
 - [x] Benchmark CPU × GPU em regime permanente (motorBike, 3,2 M células)
-- [x] Benchmark em caso transiente (cavity3D, PISO): GPU 1,38× (1 M) e 2,27× (3,4 M)
+- [x] Benchmark em caso transiente (cavity3D, PISO): GPU de 1,03× (0,5 M) a 2,09× (3,4 M)
 - [x] Tutoriais prontos em `tutorials/GPU/`
 - [ ] Apple Silicon: compilar e validar o fork em aarch64, benchmark de CPU ([plano](apple/README.md))
 - [ ] Apple Silicon: levantar se há caminho viável para a pressão na GPU da Apple (Metal)

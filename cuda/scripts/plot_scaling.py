@@ -89,7 +89,7 @@ def grafico(pts, tema, out):
 
     fig.text(0.01, 0.005,
              "cavity3D, icoFoam PISO, 4 processos MPI · RTX 4050 Laptop (6 GB) × CPU do mesmo notebook · "
-             "média após 5 passos de aquecimento · 3,4 M medido em 10/10/2026 (mesmo caso e receita)",
+             "média após 5 passos de aquecimento",
              color=t["muted"], fontsize=8.5)
     fig.subplots_adjust(left=0.05, right=0.98, top=0.86, bottom=0.2)
     fig.savefig(out, facecolor=t["surface"])

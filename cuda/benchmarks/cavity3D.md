@@ -11,16 +11,18 @@ de aquecimento (30 passos na malha de 1 M, 20 na de 3,4 M).
 
 | Malha | CPU (GAMG) | GPU (AMGX) | Ganho | Iterações de p, CPU / GPU |
 |---|---:|---:|---:|---:|
-| 80³ = 0,5 M células | 0,208 s/passo | 0,201 s/passo | 1,03× | 3,9 / 5,3 |
-| 100³ = 1,0 M | 0,583 | 0,411 | **1,42×** | 7,8 / 5,7 |
-| 125³ = 2,0 M | 1,454 | 0,852 | **1,71×** | 8,7 / 5,7 |
-| 150³ = 3,4 M | 3,577 | 1,577 | **2,27×** | 15,6 / 5,6 |
+| 80³ = 0,5 M células | 0,204 s/passo | 0,197 s/passo | 1,03× | 3,9 / 5,3 |
+| 100³ = 1,0 M | 0,570 | 0,403 | **1,42×** | 7,8 / 5,7 |
+| 125³ = 2,0 M | 1,283 | 0,834 | **1,54×** | 8,7 / 5,7 |
+| 140³ = 2,7 M | 1,932 | 1,192 | **1,62×** | 9,8 / 5,5 |
+| 150³ = 3,4 M | 3,110 | 1,485 | **2,09×** | 14,6 / 5,6 |
 
-0,5, 1 e 2 M medidos em 11/10/2026 (25 passos, média após 5 de aquecimento); 3,4 M medido
-em 10/10/2026 com o mesmo caso, a mesma receita e o mesmo critério. Na repetição de 3,4 M
-em 11/10 a CPU deu 3,349 s/passo, mas a GPU não completou: o Linux matou os processos por
-falta de RAM (8 GB no WSL) ao criar a segunda instância da AMGX (`pFinal`). Pela mesma
-razão a malha de 4,9 M não foi medida. Dados em [`cavity3D_scaling.csv`](cavity3D_scaling.csv);
+25 passos por rodada, média depois de 5 de aquecimento, com a máquina livre (navegador e
+outros programas fechados, WSL reiniciado). A 2,7 M repetida deu 1,932 / 1,192 s/passo
+contra 1,928 / 1,194 na primeira rodada. Uma rodada anterior de 2 M com outros programas
+abertos deu 1,454 s/passo na CPU, 13% mais lenta: carga na máquina infla o tempo da CPU e,
+com ele, o ganho aparente. A malha de 4,9 M não foi medida: os 8 GB de RAM do WSL acabam ao
+criar as instâncias da AMGX nos 4 processos. Dados em [`cavity3D_scaling.csv`](cavity3D_scaling.csv);
 gráfico gerado com [`../scripts/plot_scaling.py`](../scripts/plot_scaling.py).
 
 ## CPU × GPU (10/10/2026)

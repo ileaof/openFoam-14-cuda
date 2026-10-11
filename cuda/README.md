@@ -53,7 +53,7 @@ decomposePar && mpirun -np 4 foamRun -parallel     # procure linhas "AMGx:  Solv
 1. **O `tolerance`/`relTol` do `fvSolution` é ignorado.** O critério que vale é o `"tolerance"` do `amgxpOptions` (`RELATIVE_INI`). Iguale ao `relTol` do caso, ou a GPU fará muito mais trabalho que a CPU.
 2. **Não use `caching { update periodic | adaptive | never; }`.** Nesses modos o amgx4foam deixa de atualizar a matriz, e o resultado fica fisicamente errado mesmo convergindo. Para economizar setup use `"structure_reuse_levels": -1`, que já está em `config/amgxpOptions`.
 3. **Malha pequena favorece a CPU.** Use a cavity só para validar o resultado, não para medir velocidade.
-   Na [cavity3D](benchmarks/cavity3D.md) o ganho vai de 1,38× com 1 M células a 2,27× com 3,4 M.
+   Na [cavity3D](benchmarks/cavity3D.md) o ganho vai de 1,03× com 0,5 M células a 2,09× com 3,4 M.
 4. **2 a 4 processos por GPU.** Cada processo abre um contexto CUDA na mesma placa.
 5. **Libere a GPU.** ParaView, jogos e o próprio desktop disputam a memória da placa; falta de memória aparece como `Cuda failure: 'unknown error'` / `Out of resource`.
 6. **Em regime permanente (SIMPLE) a pressão costuma ser só ~10% da iteração.** O ganho aparece em casos transientes em que a pressão domina. Veja `benchmarks/motorBike.md`.

@@ -14,9 +14,10 @@ source ~/dev/OpenFOAM-14/cuda/scripts/env.sh
 | Caso | Solver | Malha | Ganho medido (GPU × CPU, 4 processos) |
 |---|---|---|---|
 | [`cavity3D`](cavity3D/) | `icoFoam`, PISO transiente | 80³ = 0,5 M células | 1,03× (empate) |
-| | | 100³ = 1 M células | 1,42× (0,411 × 0,583 s/passo) |
-| | | 125³ = 2 M células | 1,71× (0,852 × 1,454 s/passo) |
-| | | 150³ = 3,4 M células | 2,27× (1,577 × 3,577 s/passo) |
+| | | 100³ = 1 M células | 1,42× (0,403 × 0,570 s/passo) |
+| | | 125³ = 2 M células | 1,54× (0,834 × 1,283 s/passo) |
+| | | 140³ = 2,7 M células | 1,62× (1,192 × 1,932 s/passo) |
+| | | 150³ = 3,4 M células | 2,09× (1,485 × 3,110 s/passo) |
 
 ```bash
 cd tutorials/GPU/cavity3D
