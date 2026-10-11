@@ -382,15 +382,15 @@ error: libcu++ requires at least C++ 17.</pre>
 
 <section id="visuais">
   <h2>Visualização</h2>
-  <p class="section-sub">ParaView, caso <code>cavity</code> na malha de 40.000 células, campo resolvido na GPU.</p>
+  <p class="section-sub">ParaView 6, motorBike do tutorial do OpenFOAM-14 (3,2 M células, 500 iterações SIMPLE), o caso usado nos benchmarks de GPU. Campo da rodada de referência (GAMG na CPU); o script está em <code>cuda/scripts/render_motorbike.py</code>.</p>
   <div class="gallery">
     <figure>
-      <img src="frame_fine.png" alt="Campo de velocidade com streamtubes mostrando a recirculação da cavity" loading="lazy">
-      <figcaption>Streamtubes 3D sobre o campo de velocidade — vórtice único clássico de cavity com tampa móvel.</figcaption>
+      <img src="motorbike_streamlines.png" alt="Moto e piloto coloridos pela pressão, com tubos de corrente coloridos pela velocidade" loading="lazy">
+      <figcaption>Pressão na superfície (estagnação em vermelho na carenagem e no capacete, sucção em azul nos ombros) e tubos de corrente coloridos por |U|, que se desaceleram na esteira.</figcaption>
     </figure>
     <figure>
-      <img src="pressure_contour.png" alt="Contour de pressão com isóbaras concêntricas nos dois cantos superiores" loading="lazy">
-      <figcaption>Isóbaras de pressão (±4 Pa) — as duas singularidades nos cantos da tampa móvel, padrão de livro-texto.</figcaption>
+      <img src="motorbike_wake.png" alt="Corte no plano de simetria colorido pela velocidade, mostrando a esteira atrás do piloto e da roda traseira" loading="lazy">
+      <figcaption>|U| no plano de simetria: aceleração sobre o capacete e esteira de baixa velocidade atrás do piloto e da roda traseira.</figcaption>
     </figure>
   </div>
 </section>

@@ -15,11 +15,10 @@
 </p>
 
 <p align="center">
-  <img src="cuda/docs/frame_fine.png" width="47%" alt="Streamtubes sobre o campo de velocidade da cavity, resolvido na GPU">
-  &nbsp;
-  <img src="cuda/docs/pressure_contour.png" width="47%" alt="Isóbaras de pressão da cavity, resolvida na GPU">
+  <img src="cuda/docs/motorbike_streamlines.png" width="49%" alt="Moto e piloto coloridos pela pressão, com tubos de corrente coloridos pela velocidade">
+  <img src="cuda/docs/motorbike_wake.png" width="49%" alt="Corte no plano de simetria colorido pela velocidade, mostrando a esteira atrás do piloto e da roda traseira">
   <br>
-  <sub>Cavity com 40.000 células, equação de pressão resolvida na GPU (RTX 4050): streamtubes e isóbaras no ParaView.</sub>
+  <sub>motorBike do tutorial do OpenFOAM-14 (3,2 M células, 500 iterações SIMPLE), o caso usado nos benchmarks de GPU: pressão na superfície com tubos de corrente (esq.) e esteira no plano de simetria (dir.). ParaView.</sub>
 </p>
 
 > **Fork comunitário, não oficial.** Não é afiliado nem endossado pela OpenFOAM Foundation
