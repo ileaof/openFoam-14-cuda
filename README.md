@@ -6,12 +6,12 @@
 </p>
 
 <p align="center">
-  <img alt="OpenFOAM" src="https://img.shields.io/badge/OpenFOAM-14_(Foundation)-1f6feb">
-  <img alt="CUDA" src="https://img.shields.io/badge/CUDA-13.2_(tested)-76b900">
-  <img alt="AMGX" src="https://img.shields.io/badge/solver-AMGX_FGMRES%2BAMG-76b900">
-  <img alt="Compilers" src="https://img.shields.io/badge/compilers-GCC_11_%7C_Intel_oneAPI_2026-8250df">
-  <img alt="OS" src="https://img.shields.io/badge/Ubuntu_22.04-native_%7C_WSL2-e95420">
-  <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-lightgrey">
+  <img alt="OpenFOAM" src="cuda/docs/badges/openfoam.svg">
+  <img alt="CUDA" src="cuda/docs/badges/cuda.svg">
+  <img alt="AMGX" src="cuda/docs/badges/amgx.svg">
+  <img alt="Compilers" src="cuda/docs/badges/compilers.svg">
+  <img alt="OS" src="cuda/docs/badges/os.svg">
+  <img alt="License" src="cuda/docs/badges/license.svg">
 </p>
 
 <p align="center"><b>English</b> · <a href="README.pt-BR.md">Português</a></p>
