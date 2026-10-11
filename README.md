@@ -27,7 +27,7 @@
 ## Sumário
 
 - [O que este fork faz](#o-que-este-fork-faz)
-- [Estado e resultados](#estado-e-resultados)
+- [Estado e resultados](#estado-e-resultados) · [Galeria](#galeria)
 - [1. Pré-requisitos](#1-pré-requisitos)
 - [2. Baixar](#2-baixar)
 - [3. Compilar o OpenFOAM-14](#3-compilar-o-openfoam-14)
@@ -87,6 +87,39 @@ e [`cuda/benchmarks/motorBike.md`](cuda/benchmarks/motorBike.md).
 
 **Ambiente testado:** RTX 4050 Laptop (6 GB, compute capability 8.9) · Windows 11 + WSL2 ·
 Ubuntu 22.04 · CUDA 13.2 · driver 596.08 · GCC 11.4 · Intel oneAPI 2026.1 · OpenMPI 4.1.
+
+## Galeria
+
+Outros casos rodados neste fork, **na CPU** (nesses dois a pressão é uma parte pequena do
+passo, então a GPU não ajudaria; ver [`tutorials/GPU`](tutorials/GPU/)). Figuras geradas no
+ParaView com [`cuda/scripts/render_poolfire.py`](cuda/scripts/render_poolfire.py) e
+[`cuda/scripts/render_hvac.py`](cuda/scripts/render_hvac.py).
+
+**Fogo de piscina de metano**: `multicomponentFluid/smallPoolFire3D`, com o domínio estendido
+de 1 m para 3 m de altura (60 × 180 × 60 = 648 mil células), 4 s de simulação.
+
+<p align="center">
+  <img src="cuda/docs/poolfire_isosurfaces.png" width="31%" alt="Isosuperfícies de temperatura de 400 a 1600 K cortadas ao meio, coluna da pluma de 3 m">
+  <img src="cuda/docs/poolfire_anim3d.gif" width="31%" alt="Animação das isosuperfícies de temperatura de 0,1 a 4 s">
+  <img src="cuda/docs/poolfire_slice.png" width="31%" alt="Temperatura no plano central com setas de velocidade">
+  <br>
+  <sub>Isosuperfícies de 400 a 1600 K cortadas ao meio (esq.), evolução de 0,1 a 4 s (centro) e
+  temperatura no plano central com setas de velocidade (dir.). A chama (acima de ~1200 K)
+  termina por volta de 1,5 m; acima dela sobe a pluma de gases quentes.</sub>
+</p>
+
+**Ventilação e refrigeração de uma sala**: `fluid/hotRoomComfort`, ar a 17 °C insuflado a
+0,2 m/s numa sala a 29 °C, regime permanente (48 mil células), com conforto térmico PMV/PPD.
+
+<p align="center">
+  <img src="cuda/docs/hvac_streamlines.png" width="31%" alt="Linhas de corrente coloridas pela temperatura saindo da grelha de insuflamento">
+  <img src="cuda/docs/hvac_orbit.gif" width="31%" alt="Volta de 360 graus em torno da sala com as linhas de corrente">
+  <img src="cuda/docs/hvac_comfort.png" width="31%" alt="Conforto térmico PMV a 1,1 m de altura">
+  <br>
+  <sub>O ar frio cai logo ao sair da grelha, corre pelo piso e volta quente pelo teto (esq. e
+  centro). A 1,1 m de altura o PMV fica em ~+1,4, levemente quente (dir.): com essa vazão a
+  sala não chega ao conforto.</sub>
+</p>
 
 ---
 
@@ -368,6 +401,7 @@ OpenFOAM-14/                árvore original do OpenFOAM Foundation (sem altera�
 │   ├── benchmarks/         cavity3D.md, motorBike.md
 │   └── docs/               tutorial.html, report.html, imagens
 ├── tutorials/GPU/          casos prontos com a pressão na GPU (cavity3D)
+├── apple/                  OpenFOAM em Apple Silicon (planejado, ainda não testado)
 ├── README.md               este arquivo
 └── README.org              README original do OpenFOAM
 ```
@@ -381,6 +415,8 @@ OpenFOAM-14/                árvore original do OpenFOAM Foundation (sem altera�
 - [x] Benchmark CPU × GPU em regime permanente (motorBike, 3,2 M células)
 - [x] Benchmark em caso transiente (cavity3D, PISO): GPU 1,38× (1 M) e 2,27× (3,4 M)
 - [x] Tutoriais prontos em `tutorials/GPU/`
+- [ ] Apple Silicon: compilar e validar o fork em aarch64, benchmark de CPU ([plano](apple/README.md))
+- [ ] Apple Silicon: levantar se há caminho viável para a pressão na GPU da Apple (Metal)
 - [ ] Aplicar ao caso de combustão do WiebePy (OpenFOAM 13)
 
 ## Créditos e licença

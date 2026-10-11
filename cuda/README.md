@@ -16,7 +16,7 @@ OpenFOAM-14  →  amgx4foam (libamgxFoam.so)  →  foam2csr (libfoam2csr.so)  �
 | `scripts/build_all.sh` | clona as três dependências nos commits testados, aplica os patches e compila |
 | `config/amgxpOptions` | configuração da AMGX recomendada (FGMRES + AMG clássico PMIS) |
 | `scripts/tune_amgx.py` | compara receitas da AMGX num caso seu e mostra a mais rápida |
-| `scripts/render_motorbike.py` | gera as figuras do motorBike no ParaView |
+| `scripts/render_*.py` | figuras do README no ParaView (motorBike, pluma, HVAC) |
 | `benchmarks/` | resultados medidos: [cavity3D](benchmarks/cavity3D.md) (PISO, 1 e 3,4 M células) e [motorBike](benchmarks/motorBike.md) (SIMPLE, 3,2 M) |
 | [`../tutorials/GPU/`](../tutorials/GPU/) | casos prontos em que a GPU ganha da CPU (`./Allrun gpu`) |
 | `docs/` | tutorial passo a passo e relatório técnico em HTML (baixe e abra no navegador) |
