@@ -108,6 +108,13 @@ de 1 m para 3 m de altura (60 × 180 × 60 = 648 mil células), 4 s de simulaç�
   termina por volta de 1,5 m; acima dela sobe a pluma de gases quentes.</sub>
 </p>
 
+<p align="center">
+  <img src="cuda/docs/poolfire_anim2d.gif" width="28%" alt="Animação da temperatura no plano central de 0,1 a 4 s">
+  <br>
+  <sub>Temperatura no plano central de 0,1 a 4 s: o "cogumelo" de ignição sobe e a chama se
+  estabiliza em ~1,5 m de altura.</sub>
+</p>
+
 **Ventilação e refrigeração de uma sala**: `fluid/hotRoomComfort`, ar a 17 °C insuflado a
 0,2 m/s numa sala a 29 °C, regime permanente (48 mil células), com conforto térmico PMV/PPD.
 
@@ -119,6 +126,13 @@ de 1 m para 3 m de altura (60 × 180 × 60 = 648 mil células), 4 s de simulaç�
   <sub>O ar frio cai logo ao sair da grelha, corre pelo piso e volta quente pelo teto (esq. e
   centro). A 1,1 m de altura o PMV fica em ~+1,4, levemente quente (dir.): com essa vazão a
   sala não chega ao conforto.</sub>
+</p>
+
+<p align="center">
+  <img src="cuda/docs/hvac_temperature.png" width="62%" alt="Temperatura em um corte vertical pelo jato e num corte horizontal perto do piso">
+  <br>
+  <sub>Temperatura num corte vertical pelo jato de insuflamento e num corte horizontal a 0,15 m
+  do piso: o ar frio desce rente à parede e forma uma camada fria sobre o piso.</sub>
 </p>
 
 ---
