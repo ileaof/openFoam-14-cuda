@@ -11,7 +11,7 @@ OpenFOAM-14  →  amgx4foam (libamgxFoam.so)  →  foam2csr (libfoam2csr.so)  �
 
 | Folder | Contents |
 |---|---|
-| `patches/` | fixes so foam2csr and amgx4foam build and run with OpenFOAM-14 and CUDA 13 |
+| `patches/` | fixes so foam2csr and amgx4foam build and run with OpenFOAM-14 and CUDA 13 (to apply them by hand, or to remake them for new versions, see the [main README](../README.md#applying-the-patches-by-hand)) |
 | `scripts/env.sh` | environment variables (source it before building or running) |
 | `scripts/build_all.sh` | clones the three dependencies at the tested commits, applies the patches and builds |
 | `config/amgxpOptions` | recommended AMGX configuration (FGMRES + classical AMG, PMIS) |

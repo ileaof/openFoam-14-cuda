@@ -56,7 +56,7 @@ máquina, que é o limite do teste, não da GPU.
 - [1. Pré-requisitos](#1-pré-requisitos)
 - [2. Baixar](#2-baixar)
 - [3. Compilar o OpenFOAM-14](#3-compilar-o-openfoam-14)
-- [4. Compilar a parte GPU](#4-compilar-a-parte-gpu)
+- [4. Compilar a parte GPU](#4-compilar-a-parte-gpu) · [patches à mão](#aplicar-os-patches-manualmente) · [versões novas](#quando-saírem-versões-novas)
 - [5. Usar a GPU num caso](#5-usar-a-gpu-num-caso)
 - [6. Validar antes de confiar](#6-validar-antes-de-confiar)
 - [Quando a GPU compensa](#quando-a-gpu-compensa)
@@ -305,6 +305,46 @@ bash cuda/scripts/build_all.sh 89        # 30 a 60 min, quase todo na AMGX
 
 Ao final aparece `OK: libamgxFoam.so ready`. As dependências ficam em `~/dev`
 (mude com `export CUDA_DEPS_DIR=...`).
+
+### Aplicar os patches manualmente
+
+O `build_all.sh` faz isso por você. Para fazer à mão (para ler as mudanças, ou compilar sem o
+script), clone cada projeto **no commit testado** e aplique o patch:
+
+```bash
+cd ~/dev
+git clone https://github.com/mattmartineau/foam2csr.git
+git -C foam2csr checkout eb21649ed8b10d438d047485c0dd62cce33d269f
+git -C foam2csr apply --check ~/dev/OpenFOAM-14/cuda/patches/foam2csr.patch   # só verifica
+git -C foam2csr apply ~/dev/OpenFOAM-14/cuda/patches/foam2csr.patch
+
+git clone https://github.com/maorz1998/amgx4foam.git
+git -C amgx4foam checkout 52dee12055c10d25a37e76291485b8aeb1cd42cf
+git -C amgx4foam apply ~/dev/OpenFOAM-14/cuda/patches/amgx4foam.patch
+```
+
+- Os patches foram feitos para esses commits. Num commit mais novo o `git apply --check` pode
+  falhar; veja [Quando saírem versões novas](#quando-saírem-versões-novas).
+- O `foam2csr.patch` fixa `NVARCH = 89` (RTX 40xx). Para outra GPU, troque pelo seu compute
+  capability: `sed -i "s/^NVARCH = .*/NVARCH = 86/" foam2csr/Make/nvcc`.
+- Os patches não criam os links de compatibilidade para os nomes de bibliotecas do Ubuntu
+  (`libpetsc_real.so`, `libtrilinos_zoltan.so`); veja o passo 2/4 do `build_all.sh`.
+
+### Quando saírem versões novas
+
+Os patches valem para versões testadas: o OpenFOAM-14 desta árvore, o CUDA 13.2 e os commits do
+foam2csr e do amgx4foam fixados no `build_all.sh`. Quando uma delas mudar, fazemos patches novos
+em vez de forçar os antigos:
+
+1. Clone o commit novo do projeto e tente o patch atual com `git apply --3way`; corrija o que
+   entrar em conflito ou deixar de compilar.
+2. Compile e valide: `tutorials/GPU/cavity3D` nos modos `cpu` e `gpu` deve chegar ao mesmo número
+   de Courant, e o ganho deve ficar em linha com [`cuda/benchmarks/`](cuda/benchmarks/).
+3. Gere o patch de novo a partir da árvore corrigida, por exemplo
+   `git -C amgx4foam diff > ~/dev/OpenFOAM-14/cuda/patches/amgx4foam.patch`.
+4. Atualize o commit fixado no `build_all.sh` e as versões testadas neste README, e faça o commit.
+
+As combinações anteriores continuam disponíveis no histórico do git deste repositório.
 
 ## 5. Usar a GPU num caso
 

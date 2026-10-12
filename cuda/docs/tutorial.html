@@ -226,12 +226,13 @@
 <span class="prompt">$ </span>ln -s /usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib/libpetsc_real.so \
         ~/dev/compat/lib/libpetsc.so</code></pre>
 
-  <p>Two one-line fixes in the cloned code (neither is OpenFOAM Foundation code):</p>
-  <pre><code><span class="c"># Make/options line 7: GNU Make does not understand C-style comments</span>
-<span class="prompt">$ </span>sed -i 's|/\* Failsafe.*\*/|# Failsafe|' Make/options
-
-<span class="c"># Make/nvcc: outdated architecture and C++ standard</span>
-<span class="prompt">$ </span>sed -i 's/NVARCH = 70/NVARCH = 89/; s/c++14/c++17/' Make/nvcc</code></pre>
+  <p>Apply this repository's patch at the tested commit (none of it is OpenFOAM Foundation code). It fixes a C-style comment that GNU Make rejects, the hard-coded architecture, the C++ standard and the MPI include:</p>
+  <pre><code><span class="prompt">$ </span>cd ~/dev/foam2csr
+<span class="prompt">$ </span>git checkout eb21649ed8b10d438d047485c0dd62cce33d269f
+<span class="prompt">$ </span>git apply --check ~/dev/OpenFOAM-14/cuda/patches/foam2csr.patch   <span class="c"># dry run</span>
+<span class="prompt">$ </span>git apply ~/dev/OpenFOAM-14/cuda/patches/foam2csr.patch
+<span class="c"># the patch sets NVARCH = 89 (RTX 40xx); for another GPU use your compute capability</span>
+<span class="prompt">$ </span>sed -i "s/^NVARCH = .*/NVARCH = 89/" Make/nvcc</code></pre>
 
   <pre><code><span class="prompt">$ </span>export AMGX_INC=~/dev/AMGX/include  AMGX_LIB=~/dev/AMGX/build
 <span class="prompt">$ </span>export CUBROOT=/usr/local/cuda/targets/x86_64-linux/include/cccl
@@ -245,7 +246,10 @@
   <div class="step-head"><span class="step-num">06</span><h2>Port and build amgx4Foam</h2></div>
   <p class="step-sub">This is the wrapper that registers <code class="inline">amgx</code> as a real <code class="inline">lduMatrix::solver</code> inside OpenFOAM. The fork available in the community was written for an older API and needs these changes to build on v14 (all of them are in <code class="inline">cuda/patches/amgx4foam.patch</code>).</p>
 
-  <pre><code><span class="prompt">$ </span>cd ~/dev &amp;&amp; git clone https://github.com/maorz1998/amgx4foam.git</code></pre>
+  <pre><code><span class="prompt">$ </span>cd ~/dev &amp;&amp; git clone https://github.com/maorz1998/amgx4foam.git
+<span class="prompt">$ </span>cd amgx4foam &amp;&amp; git checkout 52dee12055c10d25a37e76291485b8aeb1cd42cf
+<span class="prompt">$ </span>git apply ~/dev/OpenFOAM-14/cuda/patches/amgx4foam.patch</code></pre>
+  <p>What the patch changes:</p>
 
   <table>
     <tr><th>File</th><th>Problem</th><th>Fix</th></tr>
@@ -255,7 +259,7 @@
     <tr><td class="mono">amgxLinearSolverContext.H</td><td>PETSc never initialized</td><td class="mono">+ PetscInitializeNoArguments()</td></tr>
   </table>
 
-  <div class="box warn"><b>Before building:</b> also replace <code class="inline">-I/usr/local/cuda-11.6/include</code> with <code class="inline">-I/usr/local/cuda/include</code> in <code class="inline">Make/options</code>, and <code class="inline">-lfoam_csr</code> with <code class="inline">-lfoam2csr</code> (the actual name of the library from the previous step).</div>
+  <div class="box ok">The patch also replaces <code class="inline">-I/usr/local/cuda-11.6/include</code> with <code class="inline">-I/usr/local/cuda/include</code> and <code class="inline">-lfoam_csr</code> with <code class="inline">-lfoam2csr</code> in <code class="inline">Make/options</code>. When a new version of any of these projects comes out, the patches are remade for it rather than forced onto it; see the main README.</div>
 
   <pre><code><span class="prompt">$ </span>export FOAM2CSR_INC=~/dev/foam2csr/src
 <span class="prompt">$ </span>export FOAM2CSR_LIB=$FOAM_USER_LIBBIN
