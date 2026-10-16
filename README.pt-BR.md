@@ -52,7 +52,7 @@ máquina, que é o limite do teste, não da GPU.
 ## Sumário
 
 - [O que este fork faz](#o-que-este-fork-faz)
-- [Estado e resultados](#estado-e-resultados) · [Galeria](#galeria)
+- [Estado e resultados](#estado-e-resultados) · [Galeria](#galeria) · [Exemplos](#exemplos)
 - [1. Pré-requisitos](#1-pré-requisitos)
 - [2. Baixar](#2-baixar)
 - [3. Compilar o OpenFOAM-14](#3-compilar-o-openfoam-14)
@@ -159,6 +159,43 @@ de 1 m para 3 m de altura (60 × 180 × 60 = 648 mil células), 4 s de simulaç�
   <sub>Temperatura num corte vertical pelo jato de insuflamento e num corte horizontal a 0,15 m
   do piso: o ar frio desce rente à parede e forma uma camada fria sobre o piso.</sub>
 </p>
+
+## Exemplos
+
+Casos completos de pesquisa, fora de `tutorials/` (precisam de ferramentas extras e levam horas ou
+dias, então não entram na bateria de tutoriais do OpenFOAM).
+
+| Caso | O que é | Tempo |
+|---|---|---|
+| [`examples/BD6500`](examples/BD6500/) | Motor diesel Branco BD-6500, ciclo 3D completo (admissão ao escape) com pistão e duas válvulas móveis (`multiValveEngine` + `meshToMesh`), liberação de calor Wiebe de 2 estágios ajustada ao ensaio, 225–350 mil células, CPU | malhas ~1 h, 3 ciclos ~1,5–2 dias em 4 núcleos |
+
+<p align="center">
+  <img src="examples/BD6500/imagens/pressao_v1.png" width="100%" alt="Pressão no cilindro do BD-6500: ensaio contra Wiebe e CFD 3D">
+</p>
+<p align="center">
+  <a href="examples/BD6500/imagens/motor3d_ciclo_v1.mp4"><img src="examples/BD6500/imagens/motor3d_ciclo_v1.gif" width="80%" alt="Animação do ciclo 3D do BD-6500"></a>
+</p>
+
+*BD-6500 a 3311 rpm, carga 60 %. Pico de pressão: ensaio 5,90 MPa a 10,0°; 3D com a liberação de
+calor Wiebe de 2 estágios e a carga do ensaio em FA 5,75 MPa a 10,5° (−2,5 %), próximo do CFD do
+wiebepy case_006; ciclo 3D completo com troca de gases simulada 5,59 MPa (−5,3 %). Animação:
+velocidade e temperatura ao longo do ciclo (clique para o MP4). Detalhes em
+[`examples/BD6500`](examples/BD6500/).*
+
+**Sobre o caso.** O Branco BD-6500 é um motor diesel monocilíndrico (diâmetro × curso 86 × 70 mm,
+taxa de compressão 17), estudado numa dissertação de mestrado deste projeto. O caso simula em 3D o
+ciclo completo de quatro tempos: admissão, compressão, combustão, expansão e escape. O pistão e as
+duas válvulas se movem com o `multiValveEngine`. Uma malha só não acompanha o levantamento das
+válvulas, então o `Allmesh` gera 62 malhas antes da rodada, uma a cada 10–20° de virabrequim
+(geometria sólida com manifold3d, depois snappyHexMesh), e o `meshToMesh` troca as malhas durante a
+rodada. A combustão não é resolvida com química: o calor do combustível (454 J/ciclo) entra como
+fonte volumétrica que segue a função de Wiebe de 2 estágios ajustada com o wiebepy à pressão medida.
+Assim o modelo 3D pode ser conferido contra o ensaio e contra o próprio CFD de válvulas fechadas do
+wiebepy. O caso também documenta como contorna limitações do OpenFOAM-14 sem alterar o código da
+Foundation: o tempo é deslocado em +360° por causa do `meshToMesh`, as faces soltas no selo das
+válvulas são corrigidas em cada malha, e o `heatSource` usa `q` em vez de `Q`. Roda na CPU: as
+malhas (225–350 mil células) ficam abaixo do porte em que a GPU ganha (veja o
+[benchmark](#estado-e-resultados)).
 
 ---
 
@@ -480,6 +517,7 @@ OpenFOAM-14/                árvore original do OpenFOAM Foundation (sem altera�
 │   ├── benchmarks/         cavity3D.md, motorBike.md
 │   └── docs/               tutorial.html, report.html, imagens
 ├── tutorials/GPU/          casos prontos com a pressão na GPU (cavity3D)
+├── examples/               casos completos de pesquisa (motor BD6500)
 ├── apple/                  OpenFOAM em Apple Silicon (planejado, ainda não testado)
 ├── README.md               README em inglês
 ├── README.pt-BR.md         este arquivo (português)

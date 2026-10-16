@@ -1,0 +1,20 @@
+#!/bin/bash
+# Etapa 1: geometria e malhas, uma por angulo de angulos.txt (graus de virabrequim, 0 = PMS da combustao).
+#   ./Allmesh                 (NJOBS=3 malhas em paralelo; PYTHON=python3)
+# Requer: OpenFOAM-14 carregado e Python com scripts/requirements.txt.
+# Resultado: geo/<CA>/ (STL + info.txt) e malhas/<CA>/ (polyMesh); resumo em log.Allmesh.
+cd "${0%/*}" || exit 1
+PY=${PYTHON:-python3}
+NJOBS=${NJOBS:-3}      # cada snappyHexMesh usa ~1,5 GB de RAM
+command -v snappyHexMesh > /dev/null || { echo "Carregue o OpenFOAM-14: source <OpenFOAM-14>/etc/bashrc"; exit 1; }
+$PY -c "import manifold3d, trimesh" 2> /dev/null || { echo "Instale: $PY -m pip install -r scripts/requirements.txt"; exit 1; }
+
+echo "geometria: $(wc -l < angulos.txt) angulos"
+for th in $(cat angulos.txt); do
+  [ -f geo/$th/fluido.stl ] || $PY scripts/geometria.py $th geo/$th > /dev/null || { echo "geometria falhou em $th"; exit 1; }
+done
+echo "malhas: $NJOBS em paralelo (pode levar ~1 h); acompanhe em log.Allmesh"
+xargs -P $NJOBS -n 1 bash scripts/malha_angulo.sh < angulos.txt > log.Allmesh 2>&1
+echo "aceitas: $(grep -c -E ': (OK|ja OK)' log.Allmesh) | rejeitadas: $(grep -c REJEITADA log.Allmesh)"
+grep REJEITADA log.Allmesh
+bash scripts/aceita.sh -360 || { echo "ERRO: a malha de -360 (inicio do caso) e obrigatoria"; exit 1; }

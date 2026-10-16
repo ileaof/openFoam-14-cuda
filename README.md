@@ -52,7 +52,7 @@ is the limit of the test, not of the GPU.
 ## Contents
 
 - [What this fork does](#what-this-fork-does)
-- [Status and results](#status-and-results) · [Gallery](#gallery)
+- [Status and results](#status-and-results) · [Gallery](#gallery) · [Examples](#examples)
 - [1. Prerequisites](#1-prerequisites)
 - [2. Download](#2-download)
 - [3. Build OpenFOAM-14](#3-build-openfoam-14)
@@ -159,6 +159,41 @@ ParaView with [`cuda/scripts/render_poolfire.py`](cuda/scripts/render_poolfire.p
   <sub>Temperature on a vertical cut through the supply jet and a horizontal cut 0.15 m above the
   floor: the cold air falls along the wall and forms a cold layer over the floor.</sub>
 </p>
+
+## Examples
+
+Complete research cases, outside `tutorials/` (they need extra tools and take hours to days, so
+they are not part of the OpenFOAM tutorial loop).
+
+| Case | What it is | Run time |
+|---|---|---|
+| [`examples/BD6500`](examples/BD6500/) | Branco BD-6500 diesel engine, full 3D cycle (intake to exhaust) with the piston and two moving valves (`multiValveEngine` + `meshToMesh`), 2-stage Wiebe heat release fitted to the engine test, 225–350 k cells, CPU | meshes ~1 h, 3 cycles ~1.5–2 days on 4 cores |
+
+<p align="center">
+  <img src="examples/BD6500/imagens/pressao_v1.png" width="100%" alt="BD-6500 in-cylinder pressure: test vs. Wiebe and 3D CFD">
+</p>
+<p align="center">
+  <a href="examples/BD6500/imagens/motor3d_ciclo_v1.mp4"><img src="examples/BD6500/imagens/motor3d_ciclo_v1.gif" width="80%" alt="BD-6500 3D cycle animation"></a>
+</p>
+
+*BD-6500 at 3311 rpm, 60 % load. Peak pressure: test 5.90 MPa at 10.0°; 3D with the 2-stage Wiebe
+heat release and the test charge at IVC 5.75 MPa at 10.5° (−2.5 %), close to the wiebepy CFD
+case_006; full 3D cycle with simulated gas exchange 5.59 MPa (−5.3 %). Animation: velocity and
+temperature through the cycle (click for the MP4). Details in [`examples/BD6500`](examples/BD6500/).*
+
+**About the case.** The Branco BD-6500 is a single-cylinder diesel engine (bore × stroke
+86 × 70 mm, compression ratio 17), studied in a master's dissertation of this project. The case
+simulates the whole four-stroke cycle in 3D: intake, compression, combustion, expansion and exhaust.
+The piston and the two valves move with `multiValveEngine`. A single mesh cannot follow the valve
+lifts, so `Allmesh` builds 62 meshes in advance, one every 10–20° of crank angle (solid geometry
+with manifold3d, then snappyHexMesh), and `meshToMesh` swaps them during the run. Combustion is not
+solved with chemistry: the heat of the fuel (454 J/cycle) is imposed as a volumetric source that
+follows the 2-stage Wiebe function fitted with wiebepy to the measured
+pressure. That way the 3D model can be checked against the engine test and against wiebepy's own
+closed-valve CFD. The case also documents how it works around OpenFOAM-14 limitations without
+changing the Foundation code: the time is shifted by +360° for `meshToMesh`, stray valve-seal faces
+are fixed in each mesh, and `heatSource` uses `q` instead of `Q`. It runs on the CPU: its meshes
+(225–350 k cells) are below the size at which the GPU wins (see the [benchmark](#status-and-results)).
 
 ---
 
@@ -480,6 +515,7 @@ OpenFOAM-14/                original OpenFOAM Foundation tree (unchanged)
 │   ├── benchmarks/         cavity3D.md, motorBike.md
 │   └── docs/               tutorial.html, report.html, images
 ├── tutorials/GPU/          ready-to-run cases with the pressure on the GPU (cavity3D)
+├── examples/               complete research cases (BD6500 engine)
 ├── apple/                  OpenFOAM on Apple Silicon (planned, not yet tested)
 ├── README.md               this file (English)
 ├── README.pt-BR.md         this file in Portuguese

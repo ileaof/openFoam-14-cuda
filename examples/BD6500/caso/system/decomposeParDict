@@ -1,0 +1,26 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \    /   O peration     | Website:  https://openfoam.org
+    \  /    A nd           | Version:  14
+     \/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      decomposeParDict;
+}
+
+numberOfSubdomains  4;
+// planos: x = 0 passa entre as valvulas, y = 0 pelo meio delas -> cada valvula em 2 metades continuas
+// (com scotch, fragmentos de superficie isolados num processo quebravam o mapeamento entre malhas)
+decomposer          hierarchical;
+
+hierarchical
+{
+    n           (2 2 1);
+    order       xyz;
+}
+
+// ************************************************************************* //

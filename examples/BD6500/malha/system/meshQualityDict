@@ -1,0 +1,22 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  14
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      meshQualityDict;
+}
+
+#includeEtc "caseDicts/mesh/generation/meshQualityDict.cfg"
+
+// O padrao (-1e30) deixa o snappy criar celulas com piramides invertidas, que o checkMesh rejeita
+// (aconteceu nas malhas com a valvula bem aberta). Exige tetraedros validos:
+minTetQuality   1e-15;
+minVol          1e-16;
+
+// ************************************************************************* //

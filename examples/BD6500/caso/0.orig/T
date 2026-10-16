@@ -1,0 +1,26 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \    /   O peration     | Website:  https://openfoam.org
+    \  /    A nd           | Version:  14
+     \/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    object      T;
+}
+
+// paredes do cilindro e valvulas 440 K (como no wiebepy); duto de admissao 320 K; duto de escape 600 K
+dimensions      [0 0 0 1 0 0 0];
+internalField   uniform 750;
+
+boundaryField
+{
+    inlet       { type inletOutlet; inletValue uniform 308.15; value uniform 308.15; }
+    outlet      { type inletOutlet; inletValue uniform 700; value uniform 700; }
+    intakePort  { type fixedValue; value uniform 320; }
+    exhaustPort { type fixedValue; value uniform 600; }
+    "(piston|liner|head|ivHead|evHead|ivStem|evStem|ivSeat|evSeat)" { type fixedValue; value uniform 440; }
+}

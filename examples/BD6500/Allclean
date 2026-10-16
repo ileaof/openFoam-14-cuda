@@ -1,0 +1,4 @@
+#!/bin/bash
+# Remove tudo o que o Allmesh e o Allrun geram.
+cd "${0%/*}" || exit 1
+rm -rf geo malhas run log.Allmesh pressao_ciclos.png scripts/__pycache__

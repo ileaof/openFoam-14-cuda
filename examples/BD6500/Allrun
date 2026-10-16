@@ -1,0 +1,60 @@
+#!/bin/bash
+# Etapa 2: monta o caso em run/ com as malhas aceitas e roda 3 ciclos seguidos (4 processos).
+#   ./Allrun              monta do zero e roda
+#   ./Allrun -retoma      continua do ultimo tempo gravado (pula os trechos ja concluidos)
+#   ./Allrun -monta       so monta e decompoe o caso (sem rodar)
+# Tempo do caso = CA + 360 (ciclo 1: 0..720, ciclo 2: 720..1440, ciclo 3: 1440..2160): o meshToMesh
+# do OpenFOAM-14 arredonda errado tempos de malha negativos, por isso nao se usa o CA direto.
+cd "${0%/*}" || exit 1
+EX=$PWD
+C=$EX/run
+PY=${PYTHON:-python3}
+NP=4   # igual a system/decomposeParDict (hierarchical 2 2 1)
+command -v foamRun > /dev/null || { echo "Carregue o OpenFOAM-14: source <OpenFOAM-14>/etc/bashrc"; exit 1; }
+
+if [ "$1" != "-retoma" ]; then
+  bash scripts/aceita.sh -360 || { echo "Rode ./Allmesh antes (falta a malha de -360)"; exit 1; }
+  rm -rf $C; cp -r caso $C; mkdir -p $C/constant/meshes
+  n=0
+  for th in $(cat angulos.txt); do
+    bash scripts/aceita.sh $th || continue
+    tc=$(awk -v t=$th 'BEGIN{print t+360}')
+    mkdir -p $C/constant/meshes/$tc && cp -r malhas/$th/constant/polyMesh $C/constant/meshes/$tc/
+    n=$((n + 1))
+  done
+  (cd $C/constant/meshes && ls | sort -g) > $C/constant/meshTimes
+  cp -r malhas/-360/constant/polyMesh $C/constant/polyMesh
+  $PY scripts/gera_tabelas.py $C/constant            # ivLift, evLift (lift x tempo do caso)
+  $PY scripts/gera_wiebe_q.py $C/constant/wiebeq     # q''' Wiebe 2 estagios (454 J/ciclo)
+  cp -r $C/0.orig $C/0
+  cd $C
+  setFields > log.setFields 2>&1
+  decomposePar > log.decomposePar 2>&1
+  for m in $(cat constant/meshTimes); do decomposePar -mesh "$m" > "log.decomposePar.$m" 2>&1; done
+  echo "caso montado com $n malhas: $(date '+%F %T')"
+  [ "$1" = "-monta" ] && exit 0
+fi
+cd $C || exit 1
+
+ultimo() { ls processor0 | grep -E '^[0-9.]+$' | sort -g | tail -1; }
+
+trecho() {   # fim (tempo do caso), maxDeltaT [graus], writeInterval [graus], maxCo
+  awk -v a=$(ultimo) -v b=$1 'BEGIN{exit !(a >= b - 1e-6)}' && return 0   # ja concluido
+  sed -i -e "s/^endTime .*/endTime         $1;/" -e "s/^maxDeltaT .*/maxDeltaT       $2;/" \
+         -e "s/^writeInterval .*/writeInterval   $3;/" -e "s/^maxCo .*/maxCo           $4;/" \
+         -e "s/^startFrom .*/startFrom       latestTime;/" system/controlDict
+  echo "trecho ate CA $(awk -v t=$1 'BEGIN{print (t%720)-360}') (tempo $1), maxDeltaT $2, maxCo $4: inicio $(date '+%F %T')"
+  mpirun -np $NP foamRun -parallel >> log.foamRun 2>&1 || { echo "FALHOU no trecho ate $1 $(date '+%F %T') (ver run/log.foamRun)"; exit 1; }
+}
+
+for c in 0 1 2; do
+  o=$((720 * c)); w=10; [ $c -eq 2 ] && w=4     # ciclo 3 grava a cada 4 graus (animacao)
+  echo "=== ciclo $((c + 1)) $(date '+%F %T')"
+  trecho $((o + 234)) 0.05 $w 3    # admissao (ate CA -126)
+  trecho $((o + 330)) 0.25 $w 3    # compressao (ate CA -30)
+  trecho $((o + 410)) 0.05 $w 1    # PMS e combustao (-30 a +50): passo pequeno
+  trecho $((o + 482)) 0.25 $w 3    # expansao (ate CA +122)
+  trecho $((o + 720)) 0.05 $w 3    # escape e cruzamento (ate CA +360)
+done
+echo "3 ciclos completos $(date '+%F %T')"
+cd $EX && $PY scripts/grafico_ciclos.py run dados/ensaio_P_carga60.csv pressao_ciclos.png

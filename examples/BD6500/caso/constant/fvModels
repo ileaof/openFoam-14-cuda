@@ -1,0 +1,32 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  14
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      fvModels;
+}
+// Liberacao de calor Wiebe (2 estagios, wiebepy case_006) por volume: q''' = Q(CA)/V_cilindro(CA)
+// [W/m3] na zona 'cilindro' (z < 0), nao nos dutos. 454 J por ciclo. (Com 'Q' total, o heatSource
+// divide pelo volume da zona no inicio da rodada, e no PMS aplicava so ~7 % do calor.)
+
+wiebeHeatSource
+{
+    type        heatSource;
+    cellZone    cilindro;
+    q
+    {
+        type                table;
+        values              ( #include "$FOAM_CASE/constant/wiebeq" );
+        outOfBounds         repeat;
+        interpolationScheme linear;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,115 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  14
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+// Malha do motor (cilindro + dutos - valvulas) num angulo; gerada por malha.sh
+
+#includeEtc "caseDicts/mesh/generation/snappyHexMeshDict.cfg"
+
+castellatedMesh true;
+snap            true;
+addLayers       false;
+
+geometry
+{
+    fluido
+    {
+        type triSurfaceMesh;
+        file "fluido.stl";
+        regions
+        {
+            piston      { name piston; }
+            liner       { name liner; }
+            head        { name head; }
+            intakePort  { name intakePort; }
+            exhaustPort { name exhaustPort; }
+            inlet       { name inlet; }
+            outlet      { name outlet; }
+            ivHead      { name ivHead; }
+            ivStem      { name ivStem; }
+            evHead      { name evHead; }
+            evStem      { name evStem; }
+            ivSeat      { name ivSeat; }
+            evSeat      { name evSeat; }
+        }
+    }
+
+    // regiao das frestas: cilindros em volta das sedes (valores trocados por malha.sh)
+    sedeIv { type searchableCylinder; point1 (IVX 0 SEDEZ0); point2 (IVX 0 SEDEZ1); radius IVR; }
+    sedeEv { type searchableCylinder; point1 (EVX 0 SEDEZ0); point2 (EVX 0 SEDEZ1); radius EVR; }
+};
+
+castellatedMeshControls
+{
+    features
+    (
+        { file "fluido.eMesh"; level 2; }
+    );
+
+    refinementSurfaces
+    {
+        fluido
+        {
+            level (0 0);
+            patchInfo { type wall; }
+            regions
+            {
+                head        { level (1 1); }
+                intakePort  { level (0 0); }
+                exhaustPort { level (0 0); }
+                ivHead      { level (2 2); }
+                evHead      { level (2 2); }
+                ivSeat      { level (2 2); }
+                evSeat      { level (2 2); }
+                ivStem      { level (1 1); }
+                evStem      { level (1 1); }
+                inlet       { level (0 0); patchInfo { type patch; } }
+                outlet      { level (0 0); patchInfo { type patch; } }
+            }
+        }
+    }
+
+    // refino por volume nas sedes desligado (gerava > 800 mil celulas); a fresta e resolvida
+    // pelo refino de superficie da valvula (nivel 2) e da sede/cabecote (nivel 1-2)
+    refinementRegions
+    {
+    }
+
+    // pontos dentro do fluido: cilindro e os dois dutos (podem estar desconectados)
+    insidePoints ((0 0 ZCIL) (IPX 0.0 0.030) (EPX 0.0 0.030));
+
+    nCellsBetweenLevels 3;
+}
+
+snapControls
+{
+    explicitFeatureSnap true;
+    implicitFeatureSnap false;
+    nFeatureSnapIter    15;
+}
+
+addLayersControls
+{
+    layers {}
+    relativeSizes       true;
+    expansionRatio      1.2;
+    finalLayerThickness 0.5;
+    minThickness        0.1;
+}
+
+writeFlags
+(
+);
+
+mergeTolerance 1e-6;
+
+// ************************************************************************* //
