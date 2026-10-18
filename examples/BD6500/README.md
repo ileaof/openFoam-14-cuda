@@ -4,7 +4,7 @@ OpenFOAM-14 example case (`foamRun -solver fluid`): intake, compression, combust
 
 *[Português](README.pt-BR.md)*
 
-![In-cylinder pressure: realistic walls vs. engine test](imagens/teste_paredes.png)
+![In-cylinder pressure: realistic walls vs. engine test](imagens/teste_paredes_en.png)
 
 With realistic wall temperatures, the 3D case driven by the 2-stage Wiebe heat release reaches **R² = 0.9992** against the engine test over the closed part of the cycle (IVC→EVO), with the peak pressure 2.6 % below the test (see [Results](#results)).
 
@@ -45,7 +45,13 @@ NCICLOS=2 ./Allrun   # 2 cycles are enough to converge (cycles 3 and 4 differed 
 ./Allclean
 ```
 
-At the end, `pressao_ciclos.png` compares the mean cylinder pressure of each cycle with the test (`dados/ensaio_P_carga60.csv`).
+At the end, `pressao_ciclos.png` compares the mean cylinder pressure of each cycle with the test (`dados/ensaio_P_carga60.csv`). For the same figure in English:
+
+```bash
+FIG_LANG=en python3 scripts/grafico_ciclos.py run dados/ensaio_P_carga60.csv pressao_ciclos_en.png
+```
+
+The default (without `FIG_LANG`) is Portuguese. The figures in `imagens/` exist in both languages: the name without a suffix is the Portuguese version (used in `README.pt-BR.md`), and the `_en` suffix marks the English version (used in this README).
 
 Quick smoke test (about 10 min), on a copy of this folder:
 
@@ -83,7 +89,7 @@ NJOBS=2 ./Allmesh                         # should report "aceitas: 2 | rejeitad
 
 In this run (walls at 440 K), the inlet was calibrated from cycle 3 on. The compression followed the test up to about −20°, and the remaining difference was concentrated near TDC.
 
-![Mean cylinder pressure over 4 cycles, walls at 440 K](imagens/pressao_4ciclos.png)
+![Mean cylinder pressure over 4 cycles, walls at 440 K](imagens/pressao_4ciclos_en.png)
 
 ### Realistic walls (current setup of this case)
 
@@ -95,7 +101,7 @@ Test of the closed segment (−128° to +122°), starting from the same state as
 | Walls at 440 K (cycle 4) | 5.60 MPa | 10.7° | −5.1 % | 0.9964 | 0.9905 | 150 kPa (2.5 %) |
 | **Realistic walls** | **5.75 MPa** | 10.7° | **−2.6 %** | **0.9992** | **0.9979** | **71 kPa (1.2 %)** |
 
-R² and RMSE compare each test point with the simulated pressure interpolated at the same angle. With hotter walls, the curve between −20° and TDC lies practically on the test (`imagens/teste_paredes.png`).
+R² and RMSE compare each test point with the simulated pressure interpolated at the same angle. With hotter walls, the curve between −20° and TDC lies practically on the test (`imagens/teste_paredes_en.png`).
 
 ### Versions of this example
 
@@ -115,10 +121,10 @@ angulos.txt              mesh angles (CA)
 malha/system/            blockMesh/snappyHexMesh template (placeholders filled in by malha.sh)
 caso/0.orig, constant/, system/
 scripts/                 geometria.py, malha.sh, malha_angulo.sh, aceita.sh, conserta_selo.sh,
-                         gera_tabelas.py (lift), gera_wiebe_q.py (q'''), grafico_ciclos.py
+                         gera_tabelas.py (lift), gera_wiebe_q.py (q'''), grafico_ciclos.py (FIG_LANG=en: English)
 dados/ensaio_P_carga60.csv   measured pressure (θ [rad], p [kPa])
-imagens/                 teste_paredes.png (v2: closed segment, realistic walls vs. 440 K vs. test);
-                         pressao_4ciclos.png and motor3d_ciclo.mp4 + GIF (v1: cycle 4 with walls at 440 K,
+imagens/                 teste_paredes.png / _en.png (v2: closed segment, realistic walls vs. 440 K vs. test);
+                         pressao_4ciclos.png / _en.png and motor3d_ciclo.mp4 + GIF (v1: cycle 4, walls at 440 K,
                          cut through the valve plane, U and T; the realistic-wall animation will come in v3)
 ```
 

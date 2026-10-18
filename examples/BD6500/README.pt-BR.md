@@ -43,7 +43,13 @@ NCICLOS=2 ./Allrun   # 2 ciclos já bastam para convergir (o 3º e o 4º diferir
 ./Allclean
 ```
 
-No fim, `pressao_ciclos.png` compara a pressão média no cilindro de cada ciclo com o ensaio (`dados/ensaio_P_carga60.csv`).
+No fim, `pressao_ciclos.png` compara a pressão média no cilindro de cada ciclo com o ensaio (`dados/ensaio_P_carga60.csv`). Para a mesma figura em inglês:
+
+```bash
+FIG_LANG=en python3 scripts/grafico_ciclos.py run dados/ensaio_P_carga60.csv pressao_ciclos_en.png
+```
+
+O padrão (sem `FIG_LANG`) é português. As figuras de `imagens/` existem nas duas línguas: o nome sem sufixo é a versão em português (usada no `README.pt-BR.md`), e o sufixo `_en` marca a versão em inglês (usada no `README.md`).
 
 ## Como funciona
 
@@ -105,9 +111,9 @@ angulos.txt              ângulos das malhas (CA)
 malha/system/            modelo do blockMesh/snappyHexMesh (com placeholders preenchidos por malha.sh)
 caso/0.orig, constant/, system/
 scripts/                 geometria.py, malha.sh, malha_angulo.sh, aceita.sh, conserta_selo.sh,
-                         gera_tabelas.py (lift), gera_wiebe_q.py (q'''), grafico_ciclos.py
+                         gera_tabelas.py (lift), gera_wiebe_q.py (q'''), grafico_ciclos.py (FIG_LANG=en: inglês)
 dados/ensaio_P_carga60.csv   pressão medida (θ [rad], p [kPa])
-imagens/                 teste_paredes.png (v2: trecho fechado, paredes realistas x 440 K x ensaio);
-                         pressao_4ciclos.png e motor3d_ciclo.mp4 + GIF (v1: ciclo 4 com paredes a 440 K, corte no
-                         plano das válvulas, U e T; a animação com paredes realistas virá na v3)
+imagens/                 teste_paredes.png / _en.png (v2: trecho fechado, paredes realistas x 440 K x ensaio);
+                         pressao_4ciclos.png / _en.png e motor3d_ciclo.mp4 + GIF (v1: ciclo 4 com paredes a 440 K,
+                         corte no plano das válvulas, U e T; a animação com paredes realistas virá na v3)
 ```

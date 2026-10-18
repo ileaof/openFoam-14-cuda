@@ -170,7 +170,7 @@ they are not part of the OpenFOAM tutorial loop).
 | [`examples/BD6500`](examples/BD6500/) | Branco BD-6500 diesel engine, full 3D cycle (intake to exhaust) with the piston and two moving valves (`multiValveEngine` + `meshToMesh`), 2-stage Wiebe heat release fitted to the engine test, 225–350 k cells, CPU | meshes ~1 h, ~14 h per cycle on 4 cores (2 cycles converge) |
 
 <p align="center">
-  <img src="examples/BD6500/imagens/teste_paredes.png" width="100%" alt="BD-6500 in-cylinder pressure: engine test vs. 3D CFD with realistic walls">
+  <img src="examples/BD6500/imagens/teste_paredes_en.png" width="100%" alt="BD-6500 in-cylinder pressure: engine test vs. 3D CFD with realistic walls">
 </p>
 <p align="center">
   <a href="examples/BD6500/imagens/motor3d_ciclo.mp4"><img src="examples/BD6500/imagens/motor3d_ciclo.gif" width="80%" alt="BD-6500 3D cycle animation"></a>
