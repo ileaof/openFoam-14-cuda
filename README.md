@@ -167,19 +167,20 @@ they are not part of the OpenFOAM tutorial loop).
 
 | Case | What it is | Run time |
 |---|---|---|
-| [`examples/BD6500`](examples/BD6500/) | Branco BD-6500 diesel engine, full 3D cycle (intake to exhaust) with the piston and two moving valves (`multiValveEngine` + `meshToMesh`), 2-stage Wiebe heat release fitted to the engine test, 225–350 k cells, CPU | meshes ~1 h, 3 cycles ~1.5–2 days on 4 cores |
+| [`examples/BD6500`](examples/BD6500/) | Branco BD-6500 diesel engine, full 3D cycle (intake to exhaust) with the piston and two moving valves (`multiValveEngine` + `meshToMesh`), 2-stage Wiebe heat release fitted to the engine test, 225–350 k cells, CPU | meshes ~1 h, ~14 h per cycle on 4 cores (2 cycles converge) |
 
 <p align="center">
-  <img src="examples/BD6500/imagens/pressao_v1.png" width="100%" alt="BD-6500 in-cylinder pressure: test vs. Wiebe and 3D CFD">
+  <img src="examples/BD6500/imagens/teste_paredes.png" width="100%" alt="BD-6500 in-cylinder pressure: engine test vs. 3D CFD with realistic walls">
 </p>
 <p align="center">
-  <a href="examples/BD6500/imagens/motor3d_ciclo_v1.mp4"><img src="examples/BD6500/imagens/motor3d_ciclo_v1.gif" width="80%" alt="BD-6500 3D cycle animation"></a>
+  <a href="examples/BD6500/imagens/motor3d_ciclo.mp4"><img src="examples/BD6500/imagens/motor3d_ciclo.gif" width="80%" alt="BD-6500 3D cycle animation"></a>
 </p>
 
-*BD-6500 at 3311 rpm, 60 % load. Peak pressure: test 5.90 MPa at 10.0°; 3D with the 2-stage Wiebe
-heat release and the test charge at IVC 5.75 MPa at 10.5° (−2.5 %), close to the wiebepy CFD
-case_006; full 3D cycle with simulated gas exchange 5.59 MPa (−5.3 %). Animation: velocity and
-temperature through the cycle (click for the MP4). Details in [`examples/BD6500`](examples/BD6500/).*
+*BD-6500 at 3311 rpm, 60 % load, closed part of the cycle (IVC→EVO) with the 2-stage Wiebe heat
+release fitted by wiebepy. With realistic wall temperatures the 3D CFD reaches **R² = 0.9992**
+against the engine test (0.9979 over combustion, RMSE 71 kPa); peak 5.75 MPa at 10.7° against
+5.90 MPa at 10.0° (−2.6 %, down from −5.1 % with all walls at 440 K). Animation: velocity and
+temperature through cycle 4 (click for the MP4). Details in [`examples/BD6500`](examples/BD6500/).*
 
 **About the case.** The Branco BD-6500 is a single-cylinder diesel engine (bore × stroke
 86 × 70 mm, compression ratio 17), studied in a master's dissertation of this project. The case
@@ -190,7 +191,8 @@ with manifold3d, then snappyHexMesh), and `meshToMesh` swaps them during the run
 solved with chemistry: the heat of the fuel (454 J/cycle) is imposed as a volumetric source that
 follows the 2-stage Wiebe function fitted with wiebepy to the measured
 pressure. That way the 3D model can be checked against the engine test and against wiebepy's own
-closed-valve CFD. The case also documents how it works around OpenFOAM-14 limitations without
+closed-valve CFD. With the inlet calibrated to the measured pressure at IVC and realistic wall
+temperatures, the closed part of the cycle reaches R² = 0.9992 against the test. The case also documents how it works around OpenFOAM-14 limitations without
 changing the Foundation code: the time is shifted by +360° for `meshToMesh`, stray valve-seal faces
 are fixed in each mesh, and `heatSource` uses `q` instead of `Q`. It runs on the CPU: its meshes
 (225–350 k cells) are below the size at which the GPU wins (see the [benchmark](#status-and-results)).

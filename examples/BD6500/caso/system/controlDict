@@ -39,6 +39,25 @@ maxDeltaT       0.05;
 
 functions
 {
+    // extremos de U, p, T e rho com a posicao (a cada 20 passos): localiza instabilidades
+    maximos
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   20;
+        writeFields     false;
+        writeLocation   yes;
+        select          all;
+        operation       maxMag;
+        fields          (U p T);
+    }
+    minimos
+    {
+        $maximos;
+        operation       min;
+        fields          (p T rho);
+    }
     cilindro
     {
         type            volFieldValue;

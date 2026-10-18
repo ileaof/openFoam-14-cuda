@@ -1,6 +1,6 @@
 #!/bin/bash
-# Etapa 2: monta o caso em run/ com as malhas aceitas e roda 3 ciclos seguidos (4 processos).
-#   ./Allrun              monta do zero e roda
+# Etapa 2: monta o caso em run/ com as malhas aceitas e roda NCICLOS ciclos seguidos (padrao 3; 4 processos).
+#   ./Allrun              monta do zero e roda      (NCICLOS=2 ./Allrun para 2 ciclos)
 #   ./Allrun -retoma      continua do ultimo tempo gravado (pula os trechos ja concluidos)
 #   ./Allrun -monta       so monta e decompoe o caso (sem rodar)
 # Tempo do caso = CA + 360 (ciclo 1: 0..720, ciclo 2: 720..1440, ciclo 3: 1440..2160): o meshToMesh
@@ -47,14 +47,16 @@ trecho() {   # fim (tempo do caso), maxDeltaT [graus], writeInterval [graus], ma
   mpirun -np $NP foamRun -parallel >> log.foamRun 2>&1 || { echo "FALHOU no trecho ate $1 $(date '+%F %T') (ver run/log.foamRun)"; exit 1; }
 }
 
-for c in 0 1 2; do
-  o=$((720 * c)); w=10; [ $c -eq 2 ] && w=4     # ciclo 3 grava a cada 4 graus (animacao)
+N=${NCICLOS:-3}   # com a entrada calibrada, os ciclos convergem a partir do 2o (3o e 4o iguais em 0,02 %)
+for c in $(seq 0 $((N - 1))); do
+  o=$((720 * c)); w=10; [ $c -eq $((N - 1)) ] && w=4     # ultimo ciclo grava a cada 4 graus (animacao)
   echo "=== ciclo $((c + 1)) $(date '+%F %T')"
   trecho $((o + 234)) 0.05 $w 3    # admissao (ate CA -126)
   trecho $((o + 330)) 0.25 $w 3    # compressao (ate CA -30)
   trecho $((o + 410)) 0.05 $w 1    # PMS e combustao (-30 a +50): passo pequeno
   trecho $((o + 482)) 0.25 $w 3    # expansao (ate CA +122)
+  trecho $((o + 520)) 0.02 $w 1    # descarga do escape (+122 a +160): jato sonico, passo pequeno
   trecho $((o + 720)) 0.05 $w 3    # escape e cruzamento (ate CA +360)
 done
-echo "3 ciclos completos $(date '+%F %T')"
+echo "$N ciclos completos $(date '+%F %T')"
 cd $EX && $PY scripts/grafico_ciclos.py run dados/ensaio_P_carga60.csv pressao_ciclos.png

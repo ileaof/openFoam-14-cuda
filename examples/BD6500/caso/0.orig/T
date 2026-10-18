@@ -22,5 +22,15 @@ boundaryField
     outlet      { type inletOutlet; inletValue uniform 700; value uniform 700; }
     intakePort  { type fixedValue; value uniform 320; }
     exhaustPort { type fixedValue; value uniform 600; }
-    "(piston|liner|head|ivHead|evHead|ivStem|evStem|ivSeat|evSeat)" { type fixedValue; value uniform 440; }
+    // paredes com temperaturas tipicas de diesel em carga media (Heywood, cap. 12); com 440 K em
+    // todas, a perda de calor perto do PMS era excessiva (pico -5,1 % contra -2,6 % com estes valores)
+    piston      { type fixedValue; value uniform 560; }
+    head        { type fixedValue; value uniform 500; }
+    liner       { type fixedValue; value uniform 420; }
+    ivHead      { type fixedValue; value uniform 520; }
+    evHead      { type fixedValue; value uniform 750; }
+    ivSeat      { type fixedValue; value uniform 500; }
+    evSeat      { type fixedValue; value uniform 550; }
+    ivStem      { type fixedValue; value uniform 450; }
+    evStem      { type fixedValue; value uniform 650; }
 }

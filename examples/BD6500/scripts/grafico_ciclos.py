@@ -18,7 +18,7 @@ for a in sorted(glob.glob(caso + "/postProcessing/cilindro/*/volFieldValue.dat")
         d[float(c[0])] = float(c[1])
 ciclos = {}
 for t in sorted(d):
-    k = min(int(t // 720), 2)
+    k = max(int((t - 1e-9) // 720), 0)   # t = 720k fecha o ciclo k (CA +360)
     ciclos.setdefault(k, ([], []))
     ciclos[k][0].append(t - 720 * k - 360)
     ciclos[k][1].append(d[t] / 1e3)
@@ -31,11 +31,11 @@ for linha in open(ensaio):
     ex_ca.append(math.degrees(float(a))); ex_p.append(float(p))
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), gridspec_kw={"width_ratios": [1.6, 1]})
-cores = ["#b8cbe3", "#6f97c9", "#1f4e8c"]
+cores = ["#c9d8ea", "#9bb7d9", "#5f8bc4", "#1f4e8c", "#0b2a55"]
 for ax in (ax1, ax2):
     ax.plot(ex_ca, ex_p, "o", ms=2.5, color="#444444", label="ensaio (carga 60 %)")
     for k, (ca, p) in sorted(ciclos.items()):
-        ax.plot(ca, p, "-", lw=1.4 + 0.4 * k, color=cores[k], label=f"CFD 3D, ciclo {k + 1}")
+        ax.plot(ca, p, "-", lw=1.2 + 0.4 * k, color=cores[min(k, 4)], label=f"CFD 3D, ciclo {k + 1}")
     ax.set_xlabel("ângulo do virabrequim [° CA]")
     ax.set_ylabel("pressão média no cilindro [kPa]")
     ax.grid(alpha=0.3)
@@ -48,7 +48,7 @@ for k, (ca, p) in sorted(ciclos.items()):
     txt.append(f"ciclo {k + 1}: {p[m]/1e3:.2f} MPa a {ca[m]:.1f}°")
 ax2.text(0.03, 0.97, "\n".join(txt), transform=ax2.transAxes, va="top", fontsize=9)
 h, l = ax1.get_legend_handles_labels()
-fig.legend(h, l, loc="lower center", ncol=4, fontsize=9, frameon=False)
+fig.legend(h, l, loc="lower center", ncol=5, fontsize=9, frameon=False)
 fig.suptitle("Branco BD-6500, 3311 rpm, carga 60 % — Wiebe 2 estágios (454 J/ciclo)", fontsize=12)
 fig.tight_layout(rect=(0, 0.07, 1, 1))
 fig.savefig(saida, dpi=130)

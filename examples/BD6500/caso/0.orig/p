@@ -18,7 +18,7 @@ internalField   uniform 105000;
 
 boundaryField
 {
-    inlet  { type totalPressure; p0 uniform 100000; value uniform 100000; }
+    inlet  { type totalPressure; p0 uniform 111000; value uniform 111000; }   // calibrada: p no FA = 123 kPa (ensaio)
     outlet { type totalPressure; p0 uniform 105000; value uniform 105000; }
     ".*"   { type zeroGradient; }
 }
