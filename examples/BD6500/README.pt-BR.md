@@ -85,7 +85,17 @@ Teste do trecho fechado (−128° a +122°), partindo do mesmo estado do ciclo 4
 | Paredes a 440 K (ciclo 4) | 5,60 MPa | 10,7° | −5,1 % | 0,9964 | 0,9905 | 150 kPa (2,5 %) |
 | **Paredes realistas** | **5,75 MPa** | 10,7° | **−2,6 %** | **0,9992** | **0,9979** | **71 kPa (1,2 %)** |
 
-R² e RMSE comparam cada ponto do ensaio com a pressão simulada interpolada no mesmo ângulo. Com paredes mais quentes, a curva entre −20° e o PMS fica praticamente sobre o ensaio (`imagens/teste_paredes.png`). A confirmação no ciclo completo está em andamento: as paredes mais quentes também aquecem a carga na admissão. Assim que os ciclos completos terminarem, esta tabela será atualizada.
+R² e RMSE comparam cada ponto do ensaio com a pressão simulada interpolada no mesmo ângulo. Com paredes mais quentes, a curva entre −20° e o PMS fica praticamente sobre o ensaio (`imagens/teste_paredes.png`).
+
+### Versões deste exemplo
+
+| Versão | Conteúdo | Situação |
+|---|---|---|
+| v1 | Entrada calibrada (111 kPa), limitadores, 4 ciclos com paredes a 440 K (pico −5,1 %), animação do ciclo 4 | publicada |
+| **v2 (esta)** | **Paredes realistas** em `0.orig/T`; teste do trecho fechado (pico −2,6 %, R² 0,9979 na combustão) | **completa** |
+| v3 | Confirmação no ciclo completo com paredes realistas (2 ciclos) e animação nova desse ciclo | em execução |
+
+A v2 está completa. A animação `imagens/motor3d_ciclo.mp4` continua sendo a do ciclo 4 com paredes a 440 K, e isso é intencional: o teste da v2 cobriu só o trecho fechado. A animação com paredes realistas e os números do ciclo completo virão na v3. No ciclo completo, as paredes mais quentes também aquecem a carga na admissão, então o ganho pode ficar um pouco menor que no trecho fechado.
 
 ## Arquivos
 
@@ -97,6 +107,7 @@ caso/0.orig, constant/, system/
 scripts/                 geometria.py, malha.sh, malha_angulo.sh, aceita.sh, conserta_selo.sh,
                          gera_tabelas.py (lift), gera_wiebe_q.py (q'''), grafico_ciclos.py
 dados/ensaio_P_carga60.csv   pressão medida (θ [rad], p [kPa])
-imagens/                 pressao_4ciclos.png e motor3d_ciclo.mp4 (+ GIF) (ciclo 4, paredes a 440 K: corte no
-                         plano das válvulas, U e T); teste_paredes.png (trecho fechado, paredes realistas)
+imagens/                 teste_paredes.png (v2: trecho fechado, paredes realistas x 440 K x ensaio);
+                         pressao_4ciclos.png e motor3d_ciclo.mp4 + GIF (v1: ciclo 4 com paredes a 440 K, corte no
+                         plano das válvulas, U e T; a animação com paredes realistas virá na v3)
 ```

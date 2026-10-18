@@ -95,7 +95,17 @@ Test of the closed segment (−128° to +122°), starting from the same state as
 | Walls at 440 K (cycle 4) | 5.60 MPa | 10.7° | −5.1 % | 0.9964 | 0.9905 | 150 kPa (2.5 %) |
 | **Realistic walls** | **5.75 MPa** | 10.7° | **−2.6 %** | **0.9992** | **0.9979** | **71 kPa (1.2 %)** |
 
-R² and RMSE compare each test point with the simulated pressure interpolated at the same angle. With hotter walls, the curve between −20° and TDC lies practically on the test (`imagens/teste_paredes.png`). Confirmation over the full cycle is in progress, since hotter walls also heat the charge during intake. This table will be updated when the full cycles finish.
+R² and RMSE compare each test point with the simulated pressure interpolated at the same angle. With hotter walls, the curve between −20° and TDC lies practically on the test (`imagens/teste_paredes.png`).
+
+### Versions of this example
+
+| Version | Contents | Status |
+|---|---|---|
+| v1 | Calibrated inlet (111 kPa), limiters, 4 cycles with walls at 440 K (peak −5.1 %), cycle 4 animation | published |
+| **v2 (this one)** | **Realistic walls** in `0.orig/T`; closed-segment test (peak −2.6 %, R² 0.9979 over combustion) | **complete** |
+| v3 | Full-cycle confirmation with realistic walls (2 cycles) and a new animation of that cycle | running |
+
+v2 is complete. The animation `imagens/motor3d_ciclo.mp4` is still the one of cycle 4 with walls at 440 K, and that is intentional: the v2 test covered only the closed segment. The animation with realistic walls and the full-cycle numbers will come in v3. Over the full cycle, the hotter walls also heat the charge during intake, so the gain may be somewhat smaller than in the closed segment.
 
 ## Files
 
@@ -107,9 +117,9 @@ caso/0.orig, constant/, system/
 scripts/                 geometria.py, malha.sh, malha_angulo.sh, aceita.sh, conserta_selo.sh,
                          gera_tabelas.py (lift), gera_wiebe_q.py (q'''), grafico_ciclos.py
 dados/ensaio_P_carga60.csv   measured pressure (θ [rad], p [kPa])
-imagens/                 pressao_4ciclos.png and motor3d_ciclo.mp4 (+ GIF preview) (cycle 4, walls at
-                         440 K: cut through the valve plane, U and T); teste_paredes.png (closed
-                         segment, realistic walls)
+imagens/                 teste_paredes.png (v2: closed segment, realistic walls vs. 440 K vs. test);
+                         pressao_4ciclos.png and motor3d_ciclo.mp4 + GIF (v1: cycle 4 with walls at 440 K,
+                         cut through the valve plane, U and T; the realistic-wall animation will come in v3)
 ```
 
 The scripts and the console messages are in Portuguese; the names above are kept as they are because the scripts depend on them.
